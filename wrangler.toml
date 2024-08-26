@@ -12,8 +12,17 @@ MY_VARIABLE = "server!!!"
 [ai]
 binding = "AI"
 
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "cloudflare-rag-index"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "cloudflare-rag-bucket"
+
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases
+
 # [[d1_databases]]
 # binding = "MY_DB"
 # database_name = "my-database"

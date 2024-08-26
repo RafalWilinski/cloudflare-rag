@@ -15,12 +15,20 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@cloudflare/ai-utils": "^1.0.1",
+    "@langchain/core": "^0.2.28",
+    "@langchain/textsplitters": "^0.0.3",
     "@remix-run/cloudflare": "^2.11.1",
     "@remix-run/cloudflare-pages": "^2.11.1",
     "@remix-run/react": "^2.11.1",
+    "ai": "^3.3.17",
     "isbot": "^4.1.0",
+    "pdfjs-dist": "^4.5.136",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "unpdf": "^0.11.0",
+    "workers-ai-provider": "^0.0.10",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240821.1",
