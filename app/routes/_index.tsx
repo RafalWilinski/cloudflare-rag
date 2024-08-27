@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-// import { Button } from "../components/button";
+import Markdown from "react-markdown";
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 
@@ -85,9 +85,7 @@ export default function ChatApp() {
         </ul>
       </div>
 
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col">
-        {/* Message list */}
         <div className="flex-1 overflow-y-auto p-4">
           {messages.map((message, index) => (
             <div
@@ -95,11 +93,11 @@ export default function ChatApp() {
               className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
             >
               <div
-                className={`inline-block p-2 rounded-lg ${
-                  message.role === "user" ? "bg-blue-500 text-white" : "bg-gray-300"
+                className={`inline-block p-2 rounded-full px-4 py-2 ${
+                  message.role === "user" ? "bg-gray-300" : ""
                 }`}
               >
-                {message.content}
+                <Markdown>{message.content}</Markdown>
               </div>
             </div>
           ))}
