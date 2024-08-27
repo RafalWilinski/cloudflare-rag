@@ -6,9 +6,6 @@ pages_build_output_dir = "./build/client"
 [placement]
 mode = "smart"
 
-[vars]
-MY_VARIABLE = "server!!!"
-
 [ai]
 binding = "AI"
 
@@ -16,9 +13,9 @@ binding = "AI"
 binding = "VECTORIZE_INDEX"
 index_name = "cloudflare-rag-index"
 
-[[r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "cloudflare-rag-bucket"
+# [[r2_buckets]]
+# binding = "R2_BUCKET"
+# bucket_name = "cloudflare-rag-bucket"
 
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases
