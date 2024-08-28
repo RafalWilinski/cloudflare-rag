@@ -1,9 +1,9 @@
 CREATE TABLE `document_chunks` (
 	`id` text PRIMARY KEY NOT NULL,
-	`document_id` integer,
+	`document_id` text,
 	`text` text,
 	`session_id` text,
-	FOREIGN KEY (`document_id`) REFERENCES `documents`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`document_id`) REFERENCES `documents`(`id`) ON UPDATE no action ON DELETE CASCADE
 );
 
 --> statement-breakpoint
@@ -11,29 +11,32 @@ CREATE TABLE `documents` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text,
 	`text_content` text,
+	`size` integer,
 	`session_id` text,
 	`r2_url` text
 );
 
 --> statement-breakpoint
-CREATE VIRTUAL TABLE `document_chunks_fts` USING fts5(`text`);
+CREATE VIRTUAL TABLE document_chunks_fts USING fts5(
+	id UNINDEXED,
+	document_id UNINDEXED,
+	text,
+	session_id UNINDEXED,
+	content = 'document_chunks'
+);
 
-CREATE TRIGGER document_chunks_after_insert
+CREATE TRIGGER document_chunks_ai
 AFTER
 INSERT
 	ON document_chunks BEGIN
 INSERT INTO
-	document_chunks_fts(docid, id, title, body)
-SELECT
-	rowid,
-	id,
-	title,
-	body
-FROM
-	document_chunks
-WHERE
-	is_conflict = 0
-	AND encryption_applied = 0
-	AND new.rowid = document_chunks.rowid;
+	document_chunks_fts(id, document_id, text, session_id)
+VALUES
+	(
+		new.id,
+		new.document_id,
+		new.text,
+		new.session_id
+	);
 
 END;

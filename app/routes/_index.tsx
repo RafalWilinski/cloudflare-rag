@@ -4,6 +4,12 @@ import { Toaster } from 'sonner'
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 
+export const meta = ({ data }: any) => {
+  return [
+    { title: `Fullstack Cloudflare RAG` }
+  ];
+};
+
 export default function ChatApp() {
   const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -79,6 +85,7 @@ export default function ChatApp() {
   };
 
   return (
+
     <div className="flex h-screen bg-gray-100">
       <Toaster />
       <button

@@ -7,5 +7,6 @@ npx wrangler vectorize create cloudflare-rag-index --dimensions=1024 --metric=eu
 npx wrangler vectorize create-metadata-index cloudflare-rag-index --property-name=session_id --type=string
 
 npx wrangler d1 create cloudflare-rag
+# After running this, you'll need to replace the database_id in wrangler.toml
 
 npx wrangler r2 bucket create cloudflare-rag-bucket

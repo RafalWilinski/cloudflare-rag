@@ -16,7 +16,7 @@ index_name = "cloudflare-rag-index"
 [[d1_databases]]
 binding = "DB"                                       # i.e. available in your Worker on env.DB
 database_name = "cloudflare-rag"
-database_id = "82bbef3d-6d7b-4834-96e5-68b8bb343d0b" # replace with your database id
+database_id = "d81eb68d-95a3-45aa-8260-3e47f0ebe80a" # replace with your database id
 migrations_dir = "drizzle"
 
 [[r2_buckets]]
