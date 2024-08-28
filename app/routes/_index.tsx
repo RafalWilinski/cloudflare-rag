@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Markdown from "react-markdown";
+import { Toaster, toast } from 'sonner'
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 
@@ -74,18 +75,13 @@ export default function ChatApp() {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(event.target.files || []);
-    setFiles([...files, ...newFiles]);
-  };
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Hamburger button */}
+      <Toaster />
       <button
         onClick={toggleSidebar}
         className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-gray-200"

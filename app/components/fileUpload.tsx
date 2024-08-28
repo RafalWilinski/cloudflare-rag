@@ -1,7 +1,8 @@
 import { cn } from "../lib/utils";
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { IconUpload } from "@tabler/icons-react";
+import { toast } from 'sonner'
+import { IconUpload, IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone-esm";
 
 const mainVariant = {
@@ -27,11 +28,51 @@ const secondaryVariant = {
 
 export const FileUpload = ({ onChange }: { onChange?: (files: File[]) => void }) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [fileInfo, setFileInfo] = useState<{ [key: string]: { chunks: number; status: 'idle' | 'uploading' | 'success' | 'error'; error?: string } }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (newFiles: File[]) => {
+  const handleFileChange = async (newFiles: File[]) => {
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     onChange && onChange(newFiles);
+
+    for (const file of newFiles) {
+      setFileInfo(prev => ({
+        ...prev,
+        [file.name]: { chunks: 0, status: 'uploading' }
+      }));
+
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result: { chunks: number[] } = await response.json();
+          setFileInfo(prev => ({
+            ...prev,
+            [file.name]: { chunks: result.chunks.length, status: 'success' }
+          }));
+          toast.success(`Successfully uploaded ${file.name}`);
+        } else {
+          const errorText = await response.text();
+          setFileInfo(prev => ({
+            ...prev,
+            [file.name]: { chunks: 0, status: 'error', error: errorText }
+          }));
+          toast.error(`Failed to upload ${file.name}`);
+        }
+      } catch (error) {
+        setFileInfo(prev => ({
+          ...prev,
+          [file.name]: { chunks: 0, status: 'error', error: 'Network error' }
+        }));
+        toast.error(`Error uploading ${file.name}`);
+      }
+    }
   };
 
   const handleClick = () => {
@@ -123,10 +164,21 @@ export const FileUpload = ({ onChange }: { onChange?: (files: File[]) => void })
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                   {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  {fileInfo[file.name] && fileInfo[file.name].status === 'success' && ` | ${fileInfo[file.name].chunks} chunks`}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                   {file.type}
                 </p>
+                {fileInfo[file.name] && fileInfo[file.name].status === 'uploading' && (
+                  <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 flex items-center">
+                    <IconLoader2 className="animate-spin mr-1 h-3 w-3" /> Processing...
+                  </p>
+                )}
+                {fileInfo[file.name] && fileInfo[file.name].status === 'error' && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                    Error: {fileInfo[file.name].error}
+                  </p>
+                )}
               </motion.div>
             ))}
           </div>
