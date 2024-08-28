@@ -13,9 +13,15 @@ binding = "AI"
 binding = "VECTORIZE_INDEX"
 index_name = "cloudflare-rag-index"
 
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "cloudflare-rag-bucket"
+[[d1_databases]]
+binding = "DB"                                       # i.e. available in your Worker on env.DB
+database_name = "cloudflare-rag"
+database_id = "56970f13-631c-4cae-8785-465301543a05" # replace with your database id
+migrations_dir = "drizzle"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "cloudflare-rag-bucket"
 
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases

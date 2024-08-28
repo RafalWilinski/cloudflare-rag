@@ -12,7 +12,9 @@
     "typecheck": "tsc",
     "typegen": "wrangler types",
     "preview": "npm run build && wrangler pages dev",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "migrate:local": "npx drizzle-kit generate && wrangler d1 migrations apply cloudflare-rag --local",
+    "migrate": "npx drizzle-kit generate && wrangler d1 migrations apply cloudflare-rag --remote"
   },
   "dependencies": {
     "@cloudflare/ai-utils": "^1.0.1",
@@ -27,6 +29,7 @@
     "ai": "^3.3.17",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.33.0",
     "framer-motion": "^11.3.30",
     "isbot": "^4.1.0",
     "lucide-react": "^0.436.0",
@@ -51,6 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
     "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.24.2",
     "eslint": "^8.38.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.28.1",
@@ -62,7 +66,7 @@
     "typescript": "^5.1.6",
     "vite": "^5.1.0",
     "vite-tsconfig-paths": "^4.2.1",
-    "wrangler": "3.72.2"
+    "wrangler": "3.72.3"
   },
   "engines": {
     "node": ">=20.0.0"
