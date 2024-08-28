@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Markdown from "react-markdown";
-import { Toaster, toast } from 'sonner'
+import { Toaster } from 'sonner'
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 
 export default function ChatApp() {
   const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
-  const [files, setFiles] = useState<File[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [informativeMessage, setInformativeMessage] = useState("");
@@ -95,15 +94,7 @@ export default function ChatApp() {
           } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-10 flex flex-col`}
       >
         <div className="flex-grow">
-          <FileUpload onChange={() => { }} />
-          {files.length > 0 && <h2 className="text-xl font-bold mb-4">Uploaded Files</h2>}
-          <ul>
-            {files.map((file, index) => (
-              <li key={index} className="mb-2">
-                {file.name}
-              </li>
-            ))}
-          </ul>
+          <FileUpload onChange={() => { }} sessionId={sessionId} />
         </div>
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">

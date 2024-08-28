@@ -11,7 +11,7 @@ export const documents = sqliteTable('documents', {
 
 export const documentChunks = sqliteTable('document_chunks', {
   id: text('id').primaryKey(),
-  documentId: integer('document_id').references(() => documents.id),
+  documentId: text('document_id').references(() => documents.id),
   text: text('text'),
   sessionId: text('session_id'),
 });

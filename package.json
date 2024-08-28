@@ -42,6 +42,7 @@
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "ulidx": "^2.4.1",
     "unpdf": "^0.11.0",
     "workers-ai-provider": "^0.0.10",
     "zod": "^3.23.8"

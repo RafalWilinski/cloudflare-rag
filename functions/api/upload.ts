@@ -3,6 +3,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { getDocumentProxy, extractText } from "unpdf";
 import { drizzle, DrizzleD1Database } from 'drizzle-orm/d1';
 import { documentChunks, documents } from "schema";
+import { ulid } from "ulidx";
 
 async function uploadToR2(file: File, r2Bucket: R2Bucket, sessionId: string): Promise<string> {
   const r2Key = `${sessionId}/${Date.now()}-${file.name}`;
@@ -10,7 +11,7 @@ async function uploadToR2(file: File, r2Bucket: R2Bucket, sessionId: string): Pr
     httpMetadata: { contentType: file.type },
   });
 
-  return `https://${r2Bucket}.r2.cloudflarestorage.com/${r2Key}`;
+  return `${r2Key}`;
 }
 
 async function extractTextFromPDF(file: File): Promise<string> {
@@ -21,16 +22,22 @@ async function extractTextFromPDF(file: File): Promise<string> {
 }
 
 async function insertDocument(db: any, file: File, textContent: string, sessionId: string, r2Url: string) {
-  return db.insert(documents).values({
+  console.log('Inserting document...', { file, textContent, sessionId, r2Url })
+  const row = {
+    id: ulid(),
     name: file.name,
     size: file.size,
     textContent,
     sessionId,
     r2Url,
-  }).returning({ insertedId: documents.id });
+  }
+  console.log({ row });
+
+  return db.insert(documents).values(row).returning({ insertedId: documents.id });
 }
 
 async function generateEmbeddings(AI: any, chunks: string[]): Promise<{ data: number[][], chunks: string[] }> {
+  console.log('Generating embeddings...', { chunks })
   const { data }: { data: number[][] } = await AI.run(
     "@cf/baai/bge-large-en-v1.5",
     { text: chunks }
@@ -41,11 +48,13 @@ async function generateEmbeddings(AI: any, chunks: string[]): Promise<{ data: nu
 
 async function insertVectors(db: DrizzleD1Database<any>, VECTORIZE_INDEX: VectorizeIndex, embeddings: { data: number[][], chunks: string[] }, file: File, sessionId: string, documentId: string) {
   // Insert chunks into the database and get their IDs
+  console.log('Inserting vectors...', { file, sessionId, documentId })
   const chunkInsertResults = await db.insert(documentChunks).values(
-    embeddings.chunks.map((chunk) => ({
+    embeddings.chunks.map((chunk, index) => ({
+      id: ulid(),
       text: chunk,
       sessionId,
-      documentId: Number(documentId)
+      documentId
     }))
   ).returning({ insertedChunkId: documentChunks.id });
 
@@ -55,7 +64,7 @@ async function insertVectors(db: DrizzleD1Database<any>, VECTORIZE_INDEX: Vector
   // Insert vectors into VECTORIZE_INDEX
   return VECTORIZE_INDEX.insert(
     embeddings.data.map((embedding, index) => ({
-      id: `${+new Date()}-${file.name}-${index}`,
+      id: ulid(),
       values: embedding,
       namespace: "default",
       metadata: { sessionId, documentId, chunkId: chunkIds[index] },
@@ -108,7 +117,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         headers: { "Content-Type": "application/json" },
       });
     } catch (error) {
-      console.error("Error processing upload:", error);
+      console.error("Error processing upload:", (error as Error).stack);
       return new Response(JSON.stringify({ error: `An error occurred while processing the upload: ${(error as Error).message}` }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

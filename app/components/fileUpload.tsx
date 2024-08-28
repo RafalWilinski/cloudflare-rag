@@ -26,12 +26,26 @@ const secondaryVariant = {
   },
 };
 
-export const FileUpload = ({ onChange }: { onChange?: (files: File[]) => void }) => {
+export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[]) => void, sessionId: string }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [fileInfo, setFileInfo] = useState<{ [key: string]: { chunks: number; status: 'idle' | 'uploading' | 'success' | 'error'; error?: string } }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const removeErrorFiles = () => {
+    setFiles(prevFiles => prevFiles.filter(file => fileInfo[file.name]?.status !== 'error'));
+    setFileInfo(prevInfo => {
+      const newInfo = { ...prevInfo };
+      Object.keys(newInfo).forEach(fileName => {
+        if (newInfo[fileName].status === 'error') {
+          delete newInfo[fileName];
+        }
+      });
+      return newInfo;
+    });
+  };
+
   const handleFileChange = async (newFiles: File[]) => {
+    removeErrorFiles();
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     onChange && onChange(newFiles);
 
@@ -43,6 +57,7 @@ export const FileUpload = ({ onChange }: { onChange?: (files: File[]) => void })
 
       const formData = new FormData();
       formData.append("pdf", file);
+      formData.append("sessionId", sessionId);
 
       try {
         const response = await fetch("/api/upload", {
@@ -76,6 +91,7 @@ export const FileUpload = ({ onChange }: { onChange?: (files: File[]) => void })
   };
 
   const handleClick = () => {
+    removeErrorFiles();
     fileInputRef.current?.click();
   };
 
