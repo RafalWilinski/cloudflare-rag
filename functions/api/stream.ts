@@ -17,6 +17,7 @@ Provide 5 queries, one per line and nothing else:`;
   }) as { response: string };
 
   const queries = response.split('\n').filter(query => query.trim() !== '').slice(0, 5);
+  console.log({ queries })
   return queries;
 }
 
@@ -39,13 +40,13 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         queries.map(q => ctx.env.AI.run("@cf/baai/bge-large-en-v1.5", { text: [q] }))
       );
 
-      await writer.write(textEncoder.encode(`data: {"message": "Querying vector index..."}\n\n`));
+      await writer.write(textEncoder.encode(`data: {"message": "Querying vector index...", "queries": "${queries}"}\n\n`));
 
       const allResults = await Promise.all(
         queryVectors.map(qv => ctx.env.VECTORIZE_INDEX.query(qv.data[0], {
           topK: 5,
           returnValues: true,
-          returnMetadata: true,
+          returnMetadata: 'all',
         }))
       );
 
@@ -58,13 +59,15 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         });
       });
 
-      await writer.write(
-        textEncoder.encode(`data: {"message": "Found relevant documents..."}\n\n`)
-      );
+      console.log({ uniqueResults })
 
       const relevantDocs = Array.from(uniqueResults.values())
         .map((match) => match.metadata?.text || "")
         .join("\n");
+
+      await writer.write(
+        textEncoder.encode(`data: {"message": "Found relevant documents...", "relevantDocs": "${relevantDocs}"}\n\n`)
+      );
 
       messages.push({
         role: "user",
