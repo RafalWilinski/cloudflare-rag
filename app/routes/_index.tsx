@@ -3,8 +3,10 @@ import Markdown from "react-markdown";
 import { Toaster } from 'sonner'
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
+import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
+import { IconBrandGithub } from "@tabler/icons-react";
 
-export const meta = ({ data }: any) => {
+export const meta = () => {
   return [
     { title: `Fullstack Cloudflare RAG` }
   ];
@@ -22,7 +24,6 @@ export default function ChatApp() {
   }, []);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
-    console.log({ event });
     event.preventDefault();
 
     if (inputMessage.trim()) {
@@ -94,6 +95,11 @@ export default function ChatApp() {
       >
         ☰
       </button>
+
+      <a href="https://github.com/RafalWilinski/cloudflare-rag" target="_blank" rel="noopener noreferrer" className="absolute top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1">
+        <IconBrandGithub className="w-4 h-4" />
+        <AnimatedShinyText>Star on Github</AnimatedShinyText>
+      </a>
 
       {/* Sidebar */}
       <div
