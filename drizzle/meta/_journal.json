@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1724839608732,
+      "when": 1724850469520,
       "tag": "20240828100648_skinny_midnight",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1724842801658,
-      "tag": "20240828110001_fantastic_synch",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1724842942444,
-      "tag": "20240828110222_oval_mauler",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1724848504813,
-      "tag": "20240828123504_naive_pyro",
       "breakpoints": true
     }
   ]

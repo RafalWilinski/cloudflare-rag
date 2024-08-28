@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "bd0d2076-a8c3-44c6-9242-8404d5d4289b",
-  "prevId": "6486422d-1be5-499a-9e20-a59554a2e939",
+  "id": "c2763212-0fcc-4f45-b5e3-a7f08f8ab0d2",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "document_chunks": {
       "name": "document_chunks",
@@ -16,7 +16,7 @@
         },
         "document_id": {
           "name": "document_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -36,15 +36,7 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "documentIdIdx": {
-          "name": "documentIdIdx",
-          "columns": [
-            "document_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "document_chunks_document_id_documents_id_fk": {
           "name": "document_chunks_document_id_documents_id_fk",

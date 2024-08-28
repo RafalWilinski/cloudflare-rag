@@ -4,6 +4,7 @@ import { getDocumentProxy, extractText } from "unpdf";
 import { drizzle, DrizzleD1Database } from 'drizzle-orm/d1';
 import { documentChunks, documents } from "schema";
 import { ulid } from "ulidx";
+import { DrizzleError } from "drizzle-orm";
 
 async function uploadToR2(file: File, r2Bucket: R2Bucket, sessionId: string): Promise<string> {
   const r2Key = `${sessionId}/${Date.now()}-${file.name}`;
@@ -117,7 +118,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         headers: { "Content-Type": "application/json" },
       });
     } catch (error) {
-      console.error("Error processing upload:", (error as Error).stack);
+      if (error instanceof DrizzleError) {
+        console.error("Drizzle error:", error.cause);
+      }
+      console.error("Error processing upload:", (error as Error).stack, Object.keys(error as any));
       return new Response(JSON.stringify({ error: `An error occurred while processing the upload: ${(error as Error).message}` }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
