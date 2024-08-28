@@ -47,6 +47,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
           topK: 5,
           returnValues: true,
           returnMetadata: 'all',
+          namespace: "default",
         }))
       );
 

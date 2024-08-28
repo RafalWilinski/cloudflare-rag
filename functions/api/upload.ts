@@ -65,7 +65,7 @@ async function insertVectors(db: DrizzleD1Database<any>, VECTORIZE_INDEX: Vector
   // Insert vectors into VECTORIZE_INDEX
   return VECTORIZE_INDEX.insert(
     embeddings.data.map((embedding, index) => ({
-      id: ulid(),
+      id: chunkIds[index],
       values: embedding,
       namespace: "default",
       metadata: { sessionId, documentId, chunkId: chunkIds[index] },
