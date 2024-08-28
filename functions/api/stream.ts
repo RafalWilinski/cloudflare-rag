@@ -6,7 +6,7 @@ interface EmbeddingResponse {
 }
 
 async function rewriteToQueries(content: string, ai: Ai): Promise<string[]> {
-  const prompt = `Given the following user message, rewrite it into 5 distinct queries that could be used to search a vector database for relevant information. Each query should focus on different aspects or potential interpretations of the original message:
+  const prompt = `Given the following user message, rewrite it into 5 distinct queries that could be used to search for relevant information. Each query should focus on different aspects or potential interpretations of the original message:
 
 User message: "${content}"
 
@@ -16,7 +16,7 @@ Provide 5 queries, one per line and nothing else:`;
     messages: [{ role: 'user', content: prompt }],
   }) as { response: string };
 
-  const queries = response.split('\n').filter(query => query.trim() !== '').slice(0, 5);
+  const queries = response.split('\n').filter(query => query.trim() !== '').slice(1, 5);
   console.log({ queries })
   return queries;
 }
@@ -50,6 +50,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
           namespace: "default",
         }))
       );
+
+      console.log({ allResults })
 
       const uniqueResults = new Map();
       allResults.flat().forEach(result => {

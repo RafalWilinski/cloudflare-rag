@@ -96,8 +96,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       const insertResult = await insertDocument(db, file, textContent, sessionId, r2Url);
 
       const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200,
+        chunkSize: 500,
+        chunkOverlap: 100,
       });
 
       const chunks = await splitter.splitText(textContent);
