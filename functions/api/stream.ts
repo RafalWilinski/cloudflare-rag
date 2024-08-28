@@ -5,6 +5,21 @@ interface EmbeddingResponse {
   data: number[][];
 }
 
+async function rewriteToQueries(content: string, ai: Ai): Promise<string[]> {
+  const prompt = `Given the following user message, rewrite it into 5 distinct queries that could be used to search a vector database for relevant information. Each query should focus on different aspects or potential interpretations of the original message:
+
+User message: "${content}"
+
+Provide 5 queries, one per line and nothing else:`;
+
+  const { response } = await ai.run('@cf/meta/llama-3.1-8b-instruct', {
+    messages: [{ role: 'user', content: prompt }],
+  }) as { response: string };
+
+  const queries = response.split('\n').filter(query => query.trim() !== '').slice(0, 5);
+  return queries;
+}
+
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
@@ -17,60 +32,54 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       const lastMessage = messages[messages.length - 1];
       const query = lastMessage.content;
 
-      const queryVector: EmbeddingResponse = await (ctx.env.AI as Ai).run(
-        "@cf/baai/bge-large-en-v1.5",
-        {
-          text: [query],
-        }
+      await writer.write(textEncoder.encode(`data: {"message": "Rewriting message to queries..."}\n\n`));
+      const queries = await rewriteToQueries(query, ctx.env.AI as Ai);
+
+      const queryVectors: EmbeddingResponse[] = await Promise.all(
+        queries.map(q => ctx.env.AI.run("@cf/baai/bge-large-en-v1.5", { text: [q] }))
       );
+
       await writer.write(textEncoder.encode(`data: {"message": "Querying vector index..."}\n\n`));
 
-      const results = await ctx.env.VECTORIZE_INDEX.query(queryVector.data[0], {
-        topK: 5,
-        returnValues: true,
-        returnMetadata: true,
+      const allResults = await Promise.all(
+        queryVectors.map(qv => ctx.env.VECTORIZE_INDEX.query(qv.data[0], {
+          topK: 5,
+          returnValues: true,
+          returnMetadata: true,
+        }))
+      );
+
+      const uniqueResults = new Map();
+      allResults.flat().forEach(result => {
+        result.matches.forEach(match => {
+          if (!uniqueResults.has(match.id)) {
+            uniqueResults.set(match.id, match);
+          }
+        });
       });
+
       await writer.write(
         textEncoder.encode(`data: {"message": "Found relevant documents..."}\n\n`)
       );
 
-      const relevantDocs = results.matches.map((match) => match.metadata?.text || "").join("\n");
+      const relevantDocs = Array.from(uniqueResults.values())
+        .map((match) => match.metadata?.text || "")
+        .join("\n");
+
       messages.push({
         role: "user",
         content: `Relevant documents:\n${relevantDocs}`,
       });
 
       try {
-        const stream = await (ctx.env.AI as Ai).run("@cf/meta/llama-3.1-8b-instruct", {
+        const stream = await ctx.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
           messages,
           stream: true,
         });
 
-        // const transformStream = new TransformStream({
-        //   async transform(chunk, controller) {
-        //     if (!chunk || chunk.includes("[DONE]")) {
-        //       return;
-        //     } else {
-        //       try {
-        //         const parsed = JSON.parse(chunk.trim().replace("data: ", ""));
-        //         if (parsed.response) {
-        //           controller.enqueue(parsed.response);
-        //         }
-        //       } catch (error) {
-        //         controller.enqueue("error: " + JSON.stringify(error));
-        //       }
-        //     }
-        //   },
-        // });
-
-        // Release the lock on the writer so that the stream can be piped to the client
         writer.releaseLock();
 
-        await (stream as ReadableStream)
-          // .pipeThrough(new TextDecoderStream())
-          // .pipeThrough(transformStream)
-          // .pipeThrough(new TextEncoderStream())
-          .pipeTo(writable);
+        await (stream as ReadableStream).pipeTo(writable);
       } catch (error) {
         await writer.write(textEncoder.encode("Error: " + error));
         await writer.close();
@@ -80,10 +89,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   return new Response(readable, {
     headers: {
-      "Content-Type": "text/event-stream", // enable for SSE
-      // "Content-Type": "text/x-unknown",
-      // "content-encoding": "identity",
-      // "transfer-encoding": "chunked",
+      "Content-Type": "text/event-stream",
     },
   });
 };
+

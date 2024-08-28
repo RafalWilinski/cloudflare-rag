@@ -148,7 +148,6 @@ export function PlaceholdersAndVanishInput({
   };
 
   const vanishAndSubmit = () => {
-    console.log("vanishAndSubmit");
     setAnimating(true);
     draw();
 
@@ -163,7 +162,6 @@ export function PlaceholdersAndVanishInput({
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    console.log("handleSubmit");
     e.preventDefault();
     vanishAndSubmit();
     onSubmit && onSubmit(e);
