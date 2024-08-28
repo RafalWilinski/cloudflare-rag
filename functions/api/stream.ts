@@ -1,4 +1,7 @@
 import { Ai, RoleScopedChatInput } from "@cloudflare/workers-types";
+import { inArray } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
+import { documentChunks } from "schema";
 
 interface EmbeddingResponse {
   shape: number[];
@@ -27,6 +30,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   ctx.waitUntil(
     (async () => {
+      const db = drizzle(ctx.env.DB);
       const json = await ctx.request.json();
       const textEncoder = new TextEncoder();
       const messages: RoleScopedChatInput[] = json.messages as RoleScopedChatInput[];
@@ -51,30 +55,27 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         }))
       );
 
-      console.log({ allResults })
+      const allResultsFlattened = allResults.map(r => r.matches).flat()
+      const allResultsLog = allResultsFlattened.map(r => ({
+        id: r.id,
+        score: r.score,
+      }))
 
-      const uniqueResults = new Map();
-      allResults.flat().forEach(result => {
-        result.matches.forEach(match => {
-          if (!uniqueResults.has(match.id)) {
-            uniqueResults.set(match.id, match);
-          }
-        });
-      });
+      console.log({ allResultsLog })
 
-      console.log({ uniqueResults })
+      const relevantDocs = await db.select({ text: documentChunks.text })
+        .from(documentChunks)
+        .where(inArray(documentChunks.id, allResultsFlattened.map(r => r.id)));
 
-      const relevantDocs = Array.from(uniqueResults.values())
-        .map((match) => match.metadata?.text || "")
-        .join("\n");
+      const relevantTexts = relevantDocs.map(doc => doc.text).join('\n\n');
 
       await writer.write(
-        textEncoder.encode(`data: {"message": "Found relevant documents...", "relevantDocs": "${relevantDocs}"}\n\n`)
+        textEncoder.encode(`data: {"message": "Found relevant documents...", "relevantContext": "${relevantTexts}"}\n\n`)
       );
 
       messages.push({
         role: "user",
-        content: `Relevant documents:\n${relevantDocs}`,
+        content: `Relevant context from attached documents:\n${relevantTexts}`,
       });
 
       try {
