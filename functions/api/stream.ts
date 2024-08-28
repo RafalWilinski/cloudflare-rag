@@ -27,6 +27,7 @@ Provide 5 queries, one per line and nothing else:`;
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
+  const ipAddress = ctx.request.headers.get("cf-connecting-ip") || ""
 
   ctx.waitUntil(
     (async () => {

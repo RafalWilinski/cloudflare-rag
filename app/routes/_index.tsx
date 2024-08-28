@@ -5,6 +5,7 @@ import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
 import { IconBrandGithub } from "@tabler/icons-react";
+import { Checkbox } from "~/components/ui/checkbox";
 
 export const meta = () => {
   return [
@@ -13,6 +14,7 @@ export const meta = () => {
 };
 
 export default function ChatApp() {
+  const [verboseMode, setVerboseMode] = useState(false);
   const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -111,7 +113,22 @@ export default function ChatApp() {
         </div>
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">
-            Session ID: {sessionId}
+
+            <div className="items-top flex space-x-2 mb-2">
+              <Checkbox id="terms1" onClick={() => setVerboseMode(!verboseMode)} />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="terms1"
+                  className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Verbose Mode
+                </label>
+                <p className="text-x text-muted-foreground">
+                  Show me debugging data
+                </p>
+              </div>
+            </div>
+            {/* Session ID: {sessionId} */}
           </div>
         )}
       </div>

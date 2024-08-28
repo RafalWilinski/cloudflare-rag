@@ -68,13 +68,14 @@ async function insertVectors(db: DrizzleD1Database<any>, VECTORIZE_INDEX: Vector
       id: chunkIds[index],
       values: embedding,
       namespace: "default",
-      metadata: { sessionId, documentId, chunkId: chunkIds[index] },
+      metadata: { sessionId, documentId, chunkId: chunkIds[index], text: embeddings.chunks[index] },
     }))
   );
 }
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const request = ctx.request;
+  const ipAddress = request.headers.get("cf-connecting-ip") || ""
 
   if (request.method === "POST") {
     try {

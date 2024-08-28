@@ -20,6 +20,7 @@
     "@cloudflare/ai-utils": "^1.0.1",
     "@langchain/core": "^0.2.28",
     "@langchain/textsplitters": "^0.0.3",
+    "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@remix-run/cloudflare": "^2.11.1",
     "@remix-run/cloudflare-pages": "^2.11.1",
