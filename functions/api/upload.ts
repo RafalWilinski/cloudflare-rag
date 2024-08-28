@@ -23,6 +23,7 @@ async function extractTextFromPDF(file: File): Promise<string> {
 async function insertDocument(db: any, file: File, textContent: string, sessionId: string, r2Url: string) {
   return db.insert(documents).values({
     name: file.name,
+    size: file.size,
     textContent,
     sessionId,
     r2Url,
