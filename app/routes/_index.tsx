@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import { Toaster } from "sonner";
 import { stream } from "fetch-event-stream";
@@ -23,15 +23,15 @@ export const meta = () => {
 
 export default function ChatApp() {
   const [verboseMode, setVerboseMode] = useState(false);
-  const [messages, setMessages] = useState<{ content: string; role: string }[]>(
-    []
-  );
+  const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [informativeMessage, setInformativeMessage] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
   const [model, setModel] = useState("llama");
   const [provider, setProvider] = useState("groq");
+  const [waitingTime, setWaitingTime] = useState(0);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setSessionId(crypto.randomUUID());
@@ -57,11 +57,9 @@ export default function ChatApp() {
         }),
       });
 
-      for await (let event of response) {
+      for await (const event of response) {
         try {
-          const parsedChunk = JSON.parse(
-            event?.data?.trim().replace(/^data:\s*/, "") || ""
-          );
+          const parsedChunk = JSON.parse(event?.data?.trim().replace(/^data:\s*/, "") || "");
 
           const newContent =
             parsedChunk.response ||
@@ -88,10 +86,7 @@ export default function ChatApp() {
                   ];
                 }
               } else {
-                return [
-                  ...prevMessages,
-                  { content: newContent, role: "assistant" },
-                ];
+                return [...prevMessages, { content: newContent, role: "assistant" }];
               }
               return prevMessages; // Return unchanged if content was already added
             });
@@ -105,6 +100,26 @@ export default function ChatApp() {
       }
     }
   };
+
+  useEffect(() => {
+    if (informativeMessage) {
+      let startTime = Date.now();
+      timerRef.current = window.setInterval(() => {
+        setWaitingTime((Date.now() - startTime) / 1000);
+      }, 100);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      setWaitingTime(0);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [informativeMessage]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -142,10 +157,7 @@ export default function ChatApp() {
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">
             <div className="items-top flex space-x-2 mb-2">
-              <Checkbox
-                id="terms1"
-                onClick={() => setVerboseMode(!verboseMode)}
-              />
+              <Checkbox id="terms1" onClick={() => setVerboseMode(!verboseMode)} />
               <div className="grid gap-1.5 leading-none">
                 <label
                   htmlFor="terms1"
@@ -153,9 +165,7 @@ export default function ChatApp() {
                 >
                   Verbose Mode
                 </label>
-                <p className="text-x text-muted-foreground">
-                  Show me debugging data
-                </p>
+                <p className="text-x text-muted-foreground">Show me debugging data</p>
               </div>
             </div>
             {/* Session ID: {sessionId} */}
@@ -169,37 +179,94 @@ export default function ChatApp() {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
               <Select
-                onValueChange={(value) => {
+                onValueChange={(value: string) => {
                   setModel(value.split("_")[1]);
                   setProvider(value.split("_")[0]);
                 }}
+                defaultValue="groq_llama-3.1-8b-instant"
               >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Groq</SelectLabel>
-                    <SelectItem value="groq_llama-3.1-8b-instant">
+                    <SelectLabel
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <img
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                        }}
+                        alt="Groq logo"
+                        src="https://media.licdn.com/dms/image/v2/C560BAQH-yCK5i0E6jA/company-logo_200_200/company-logo_200_200/0/1654720696784/groq_logo?e=2147483647&v=beta&t=pp0y5xYtKp1Msznqp_Xu562bpUUpr1puC6GcHue56Zk"
+                      ></img>
+                      Groq
+                    </SelectLabel>
+                    <SelectItem value="groq_llama-3.1-8b-instant" className="cursor-pointer">
                       Llama 3.1 8B (Preview)
                     </SelectItem>
-                    <SelectItem value="groq_llama-3.1-70b-versatile">
+                    <SelectItem value="groq_llama-3.1-70b-versatile" className="cursor-pointer">
                       Llama 3.1 70B (Preview)
                     </SelectItem>
                   </SelectGroup>
                   <SelectGroup>
-                    <SelectLabel>OpenAI</SelectLabel>
-                    <SelectItem value="openai_gpt-4o-mini">
+                    <SelectLabel
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <img
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                        }}
+                        src="https://logosandtypes.com/wp-content/uploads/2022/07/OpenAI.png"
+                        alt="OpenAI logo"
+                      ></img>
+                      OpenAI
+                    </SelectLabel>
+                    <SelectItem value="openai_gpt-4o-mini" className="cursor-pointer">
                       GPT-4o Mini
                     </SelectItem>
-                    <SelectItem value="openai_gpt-4o">GPT-4o</SelectItem>
+                    <SelectItem value="openai_gpt-4o" className="cursor-pointer">
+                      GPT-4o
+                    </SelectItem>
                   </SelectGroup>
                   <SelectGroup>
-                    <SelectLabel>Anthropic</SelectLabel>
-                    <SelectItem value="anthropic_claude-3-5-sonnet-20240620">
+                    <SelectLabel
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <img
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                        }}
+                        src="https://www.finsmes.com/wp-content/uploads/2021/05/anthropic.jpg"
+                        alt="Anthropic logo"
+                      ></img>
+                      Anthropic
+                    </SelectLabel>
+                    <SelectItem
+                      value="anthropic_claude-3-5-sonnet-20240620"
+                      className="cursor-pointer"
+                    >
                       Claude 3.5 Sonnet
                     </SelectItem>
-                    <SelectItem value="anthropic_claude-3-haiku-20240307">
+                    <SelectItem
+                      value="anthropic_claude-3-haiku-20240307"
+                      className="cursor-pointer"
+                    >
                       Claude 3 Haiku
                     </SelectItem>
                   </SelectGroup>
@@ -210,9 +277,7 @@ export default function ChatApp() {
             messages.map((message, index) => (
               <div
                 key={index}
-                className={`mb-4 ${
-                  message.role === "user" ? "text-right" : "text-left"
-                }`}
+                className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
               >
                 <div
                   className={`inline-block p-2 rounded-full px-4 py-2 ${
@@ -245,9 +310,8 @@ export default function ChatApp() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                <span className="text-sm text-gray-500">
-                  {informativeMessage}
-                </span>
+                <span className="text-sm text-gray-500">{informativeMessage}</span>
+                <span className="text-sm text-gray-400 ml-2">({waitingTime.toFixed(1)}s)</span>
               </div>
             </div>
           )}
