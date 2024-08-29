@@ -5,6 +5,7 @@ import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import { documentChunks, documents } from "schema";
 import { ulid } from "ulidx";
 import { DrizzleError } from "drizzle-orm";
+import { exampleFiles } from "../../app/lib/exampleFiles";
 
 async function uploadToR2(file: File, r2Bucket: R2Bucket, sessionId: string): Promise<string> {
   const r2Key = `${sessionId}/${Date.now()}-${file.name}`;
@@ -127,6 +128,14 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       const formData = await ctx.request.formData();
       const file = formData.get("pdf") as File;
       const sessionId = formData.get("sessionId") as string;
+
+      if (exampleFiles.some((example) => example.sessionId === sessionId)) {
+        return new Response(
+          "You cannot upload files to test session with example files. Please reload the page and try again.",
+          { status: 400 }
+        );
+      }
+
       const db = drizzle(ctx.env.DB);
 
       if (!file || typeof file !== "object" || !("arrayBuffer" in file)) {

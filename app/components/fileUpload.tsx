@@ -1,9 +1,11 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import { cn } from "../lib/utils";
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { IconUpload, IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone-esm";
+import { exampleFiles } from "../lib/exampleFiles";
 
 const mainVariant = {
   initial: {
@@ -195,42 +197,24 @@ export const FileUpload = ({
       {files.length === 0 && (
         <div className="mt-2 text-sm text-gray-500 flex flex-col gap-0">
           <p>Try example documents:</p>
-          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-          <a
-            href="#"
-            className="text-blue-500 hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              setSessionId("test_cloudflare_earnings");
-              handleFileChange([
-                new File(
-                  ["Cloudflare Q2 2024 Earnings Call"],
-                  "Cloudflare Q2 2024 Earnings Call.pdf",
-                  {
+          {exampleFiles.map((example, index) => (
+            <a
+              key={index}
+              href="#"
+              className="text-blue-500 hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                setSessionId(example.sessionId);
+                handleFileChange([
+                  new File([example.name], example.fileName, {
                     type: "TEST",
-                  }
-                ),
-              ]);
-            }}
-          >
-            Cloudflare Q2 2024 Earnings Call
-          </a>
-          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-          <a
-            href="#"
-            className="text-blue-500 hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              setSessionId("b7c8ce3e-da8e-4067-93c5-824de5fbec58");
-              handleFileChange([
-                new File(["Artificial Intelligence Act"], "TA-9-2024-0138_EN.pdf", {
-                  type: "TEST",
-                }),
-              ]);
-            }}
-          >
-            Artificial Intelligence Act
-          </a>
+                  }),
+                ]);
+              }}
+            >
+              {example.name}
+            </a>
+          ))}
         </div>
       )}
 
