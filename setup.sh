@@ -1,6 +1,8 @@
 #! /bin/bash
 set -e
 
+cp .env.template .dev.vars
+
 # Must be on wrangler 3.72.3 or later, otherwise the create command will create V1 indexes, not V2
 npx wrangler vectorize create cloudflare-rag-index --dimensions=1024 --metric=euclidean
 # Must be on wrangler 3.72.3 or later

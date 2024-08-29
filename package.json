@@ -21,6 +21,7 @@
     "@langchain/core": "^0.2.28",
     "@langchain/textsplitters": "^0.0.3",
     "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@remix-run/cloudflare": "^2.11.1",
     "@remix-run/cloudflare-pages": "^2.11.1",
@@ -31,6 +32,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.33.0",
+    "eventsource": "^2.0.2",
     "framer-motion": "^11.3.30",
     "isbot": "^4.1.0",
     "lucide-react": "^0.436.0",
@@ -51,6 +53,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240821.1",
     "@remix-run/dev": "^2.11.1",
+    "@types/eventsource": "^1.1.15",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.4",

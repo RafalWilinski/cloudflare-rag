@@ -1,25 +1,36 @@
 import React, { useState, useEffect } from "react";
 import Markdown from "react-markdown";
-import { Toaster } from 'sonner'
+import { Toaster } from "sonner";
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
 import { IconBrandGithub } from "@tabler/icons-react";
 import { Checkbox } from "~/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 export const meta = () => {
-  return [
-    { title: `Fullstack Cloudflare RAG` }
-  ];
+  return [{ title: `Fullstack Cloudflare RAG` }];
 };
 
 export default function ChatApp() {
   const [verboseMode, setVerboseMode] = useState(false);
-  const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
+  const [messages, setMessages] = useState<{ content: string; role: string }[]>(
+    []
+  );
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [informativeMessage, setInformativeMessage] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
+  const [model, setModel] = useState("llama");
+  const [provider, setProvider] = useState("groq");
 
   useEffect(() => {
     setSessionId(crypto.randomUUID());
@@ -39,7 +50,9 @@ export default function ChatApp() {
         },
         body: JSON.stringify({
           messages: [...messages, { content: inputMessage, role: "user" }],
-          sessionId
+          sessionId,
+          model,
+          provider,
         }),
       });
 
@@ -58,16 +71,27 @@ export default function ChatApp() {
           const chunk = decoder.decode(value);
 
           try {
-            const parsedChunk = JSON.parse(chunk.trim().replace(/^data:\s*/, ""));
+            const parsedChunk = JSON.parse(
+              chunk.trim().replace(/^data:\s*/, "")
+            );
             if (parsedChunk.response) {
-              currentAssistantMessage += parsedChunk.response;
+              currentAssistantMessage +=
+                parsedChunk.response ||
+                parsedChunk.choices?.[0]?.delta?.content ||
+                parsedChunk.delta?.text ||
+                "";
               setInformativeMessage(""); // Clear informative message when response starts
+
               setMessages((prevMessages) => {
                 const newMessages = [...prevMessages];
                 if (newMessages[newMessages.length - 1]?.role === "assistant") {
-                  newMessages[newMessages.length - 1].content = currentAssistantMessage;
+                  newMessages[newMessages.length - 1].content =
+                    currentAssistantMessage;
                 } else {
-                  newMessages.push({ content: currentAssistantMessage, role: "assistant" });
+                  newMessages.push({
+                    content: currentAssistantMessage,
+                    role: "assistant",
+                  });
                 }
                 return newMessages;
               });
@@ -88,7 +112,6 @@ export default function ChatApp() {
   };
 
   return (
-
     <div className="flex h-screen bg-gray-100">
       <Toaster />
       <button
@@ -98,24 +121,32 @@ export default function ChatApp() {
         ☰
       </button>
 
-      <a href="https://github.com/RafalWilinski/cloudflare-rag" target="_blank" rel="noopener noreferrer" className="absolute top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1">
+      <a
+        href="https://github.com/RafalWilinski/cloudflare-rag"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1"
+      >
         <IconBrandGithub className="w-4 h-4" />
         <AnimatedShinyText>Fork or star on Github</AnimatedShinyText>
       </a>
 
       {/* Sidebar */}
       <div
-        className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-10 flex flex-col`}
+        className={`${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-10 flex flex-col`}
       >
         <div className="flex-grow">
-          <FileUpload onChange={() => { }} sessionId={sessionId} />
+          <FileUpload onChange={() => {}} sessionId={sessionId} />
         </div>
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">
-
             <div className="items-top flex space-x-2 mb-2">
-              <Checkbox id="terms1" onClick={() => setVerboseMode(!verboseMode)} />
+              <Checkbox
+                id="terms1"
+                onClick={() => setVerboseMode(!verboseMode)}
+              />
               <div className="grid gap-1.5 leading-none">
                 <label
                   htmlFor="terms1"
@@ -136,29 +167,88 @@ export default function ChatApp() {
       {/* Main content */}
       <div className="flex-1 flex flex-col w-full lg:w-[calc(100%-16rem)]">
         <div className="flex-1 overflow-y-auto p-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
-            >
-              <div
-                className={`inline-block p-2 rounded-full px-4 py-2 ${message.role === "user" ? "bg-gray-300" : ""
-                  } opacity-0 animate-fadeIn`}
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full space-y-4">
+              <Select
+                onValueChange={(value) => {
+                  setModel(value.split("_")[1]);
+                  setProvider(value.split("_")[0]);
+                }}
               >
-                <Markdown className="prose">{message.content}</Markdown>
-              </div>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Groq</SelectLabel>
+                    <SelectItem value="groq_llama-3.1-8b-instant">
+                      Llama 3.1 8B (Preview)
+                    </SelectItem>
+                    <SelectItem value="groq_llama-3.1-70b-versatile">
+                      Llama 3.1 70B (Preview)
+                    </SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>OpenAI</SelectLabel>
+                    <SelectItem value="openai_gpt-4o-mini">
+                      GPT-4o Mini
+                    </SelectItem>
+                    <SelectItem value="openai_gpt-4o">GPT-4o</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Anthropic</SelectLabel>
+                    <SelectItem value="anthropic_claude-3-5-sonnet-20240620">
+                      Claude 3.5 Sonnet
+                    </SelectItem>
+                    <SelectItem value="anthropic_claude-3-haiku-20240307">
+                      Claude 3 Haiku
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
-          ))}
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={`mb-4 ${
+                  message.role === "user" ? "text-right" : "text-left"
+                }`}
+              >
+                <div
+                  className={`inline-block p-2 rounded-full px-4 py-2 ${
+                    message.role === "user" ? "bg-gray-300" : ""
+                  } opacity-0 animate-fadeIn`}
+                >
+                  <Markdown className="prose">{message.content}</Markdown>
+                </div>
+              </div>
+            ))
+          )}
 
           {/* Informative message */}
           {informativeMessage && (
             <div className="mb-4 text-left">
               <div className="inline-flex items-center p-2 rounded-full px-4 py-2 bg-gray-100">
                 <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
-                <span className="text-sm text-gray-500">{informativeMessage}</span>
+                <span className="text-sm text-gray-500">
+                  {informativeMessage}
+                </span>
               </div>
             </div>
           )}

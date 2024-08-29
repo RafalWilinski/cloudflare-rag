@@ -8,3 +8,5 @@ node_modules
 .wrangler
 
 test-pdf.pdf
+.dev.envs
+debug.ts
