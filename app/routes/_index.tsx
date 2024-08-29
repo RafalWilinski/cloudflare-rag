@@ -6,7 +6,6 @@ import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
 import { IconBrandGithub } from "@tabler/icons-react";
-import { Checkbox } from "~/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,7 +21,6 @@ export const meta = () => {
 };
 
 export default function ChatApp() {
-  const [verboseMode, setVerboseMode] = useState(false);
   const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,6 +30,9 @@ export default function ChatApp() {
   const [provider, setProvider] = useState("groq");
   const [waitingTime, setWaitingTime] = useState(0);
   const timerRef = useRef<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   useEffect(() => {
     setSessionId(crypto.randomUUID());
@@ -125,6 +126,32 @@ export default function ChatApp() {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current && shouldAutoScroll) {
+      const { scrollHeight, clientHeight } = messagesContainerRef.current;
+      messagesContainerRef.current.scrollTop = scrollHeight - clientHeight;
+    }
+  };
+
+  useEffect(() => {
+    if (isNearBottom()) {
+      const timer = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages]);
+
+  const handleScroll = () => {
+    setShouldAutoScroll(isNearBottom());
+  };
+
+  const isNearBottom = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      return scrollHeight - scrollTop - clientHeight < 250;
+    }
+    return false;
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Toaster />
@@ -152,32 +179,25 @@ export default function ChatApp() {
         } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-10 flex flex-col`}
       >
         <div className="flex-grow">
-          <FileUpload onChange={() => {}} sessionId={sessionId} />
+          <FileUpload onChange={() => {}} sessionId={sessionId} setSessionId={setSessionId} />
         </div>
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">
-            <div className="items-top flex space-x-2 mb-2">
-              <Checkbox id="terms1" onClick={() => setVerboseMode(!verboseMode)} />
-              <div className="grid gap-1.5 leading-none">
-                <label
-                  htmlFor="terms1"
-                  className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Verbose Mode
-                </label>
-                <p className="text-x text-muted-foreground">Show me debugging data</p>
-              </div>
-            </div>
-            {/* Session ID: {sessionId} */}
+            Session ID: {sessionId}
           </div>
         )}
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col w-full lg:w-[calc(100%-16rem)]">
-        <div className="flex-1 overflow-y-auto p-4">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-4"
+          onScroll={handleScroll}
+        >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
+              <div className="text-sm text-gray-500 mb-0">Pick model:</div>
               <Select
                 onValueChange={(value: string) => {
                   setModel(value.split("_")[1]);
@@ -274,20 +294,23 @@ export default function ChatApp() {
               </Select>
             </div>
           ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
-              >
+            <>
+              {messages.map((message, index) => (
                 <div
-                  className={`inline-block p-2 rounded-full px-4 py-2 ${
-                    message.role === "user" ? "bg-gray-300" : ""
-                  } opacity-0 animate-fadeIn`}
+                  key={index}
+                  className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
                 >
-                  <Markdown className="prose">{message.content}</Markdown>
+                  <div
+                    className={`inline-block p-2 rounded-full px-4 py-2 ${
+                      message.role === "user" ? "bg-gray-300" : ""
+                    } opacity-0 animate-fadeIn`}
+                  >
+                    <Markdown className="prose">{message.content}</Markdown>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              <div ref={messagesEndRef} />
+            </>
           )}
 
           {/* Informative message */}

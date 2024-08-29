@@ -1,7 +1,7 @@
 import { cn } from "../lib/utils";
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { toast } from 'sonner'
+import { toast } from "sonner";
 import { IconUpload, IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone-esm";
 
@@ -26,17 +26,31 @@ const secondaryVariant = {
   },
 };
 
-export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[]) => void, sessionId: string }) => {
+export const FileUpload = ({
+  onChange,
+  sessionId,
+  setSessionId,
+}: {
+  onChange?: (files: File[]) => void;
+  sessionId: string;
+  setSessionId: (sessionId: string) => void;
+}) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [fileInfo, setFileInfo] = useState<{ [key: string]: { chunks: number; status: 'idle' | 'uploading' | 'success' | 'error'; error?: string } }>({});
+  const [fileInfo, setFileInfo] = useState<{
+    [key: string]: {
+      chunks: number;
+      status: "idle" | "uploading" | "success" | "error";
+      error?: string;
+    };
+  }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const removeErrorFiles = () => {
-    setFiles(prevFiles => prevFiles.filter(file => fileInfo[file.name]?.status !== 'error'));
-    setFileInfo(prevInfo => {
+    setFiles((prevFiles) => prevFiles.filter((file) => fileInfo[file.name]?.status !== "error"));
+    setFileInfo((prevInfo) => {
       const newInfo = { ...prevInfo };
-      Object.keys(newInfo).forEach(fileName => {
-        if (newInfo[fileName].status === 'error') {
+      Object.keys(newInfo).forEach((fileName) => {
+        if (newInfo[fileName].status === "error") {
           delete newInfo[fileName];
         }
       });
@@ -50,9 +64,22 @@ export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[])
     onChange && onChange(newFiles);
 
     for (const file of newFiles) {
-      setFileInfo(prev => ({
+      if (file.type === "test") {
+        setFileInfo((prev) => ({
+          ...prev,
+          [file.name]: { chunks: 129, status: "success" },
+        }));
+        setFiles([
+          new File(new Array(777777).fill("test"), file.name, { type: "application/pdf" }),
+        ]);
+
+        toast.success(`Successfully uploaded ${file.name}`);
+        return;
+      }
+
+      setFileInfo((prev) => ({
         ...prev,
-        [file.name]: { chunks: 0, status: 'uploading' }
+        [file.name]: { chunks: 0, status: "uploading" },
       }));
 
       const formData = new FormData();
@@ -67,23 +94,23 @@ export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[])
 
         if (response.ok) {
           const result: { chunks: number[] } = await response.json();
-          setFileInfo(prev => ({
+          setFileInfo((prev) => ({
             ...prev,
-            [file.name]: { chunks: result.chunks.length, status: 'success' }
+            [file.name]: { chunks: result.chunks.length, status: "success" },
           }));
           toast.success(`Successfully uploaded ${file.name}`);
         } else {
           const errorText = await response.text();
-          setFileInfo(prev => ({
+          setFileInfo((prev) => ({
             ...prev,
-            [file.name]: { chunks: 0, status: 'error', error: errorText }
+            [file.name]: { chunks: 0, status: "error", error: errorText },
           }));
           toast.error(`Failed to upload ${file.name}`);
         }
       } catch (error) {
-        setFileInfo(prev => ({
+        setFileInfo((prev) => ({
           ...prev,
-          [file.name]: { chunks: 0, status: 'error', error: 'Network error' }
+          [file.name]: { chunks: 0, status: "error", error: "Network error" },
         }));
         toast.error(`Error uploading ${file.name}`);
       }
@@ -165,9 +192,53 @@ export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[])
         </motion.div>
       </div>
 
+      {files.length === 0 && (
+        <div className="mt-2 text-sm text-gray-500 flex flex-col gap-0">
+          <p>Try example documents:</p>
+          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+          <a
+            href="#"
+            className="text-blue-500 hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              setSessionId("test_cloudflare_earnings");
+              handleFileChange([
+                new File(
+                  ["Cloudflare Q2 2024 Earnings Call"],
+                  "Cloudflare Q2 2024 Earnings Call.pdf",
+                  {
+                    type: "TEST",
+                  }
+                ),
+              ]);
+            }}
+          >
+            Cloudflare Q2 2024 Earnings Call
+          </a>
+          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+          <a
+            href="#"
+            className="text-blue-500 hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              setSessionId("b7c8ce3e-da8e-4067-93c5-824de5fbec58");
+              handleFileChange([
+                new File(["Artificial Intelligence Act"], "TA-9-2024-0138_EN.pdf", {
+                  type: "TEST",
+                }),
+              ]);
+            }}
+          >
+            Artificial Intelligence Act
+          </a>
+        </div>
+      )}
+
       {files.length > 0 && (
         <div className="mt-8 border-t border-gray-200 dark:border-neutral-800 pt-6">
-          <h3 className="font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Uploaded Files</h3>
+          <h3 className="font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
+            Uploaded Files
+          </h3>
           <div className="space-y-3 overflow-y-auto max-h-64">
             {files.map((file, idx) => (
               <motion.div
@@ -180,17 +251,17 @@ export const FileUpload = ({ onChange, sessionId }: { onChange?: (files: File[])
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                   {(file.size / (1024 * 1024)).toFixed(2)} MB
-                  {fileInfo[file.name] && fileInfo[file.name].status === 'success' && ` | ${fileInfo[file.name].chunks} chunks`}
+                  {fileInfo[file.name] &&
+                    fileInfo[file.name].status === "success" &&
+                    ` | ${fileInfo[file.name].chunks} chunks`}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  {file.type}
-                </p>
-                {fileInfo[file.name] && fileInfo[file.name].status === 'uploading' && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{file.type}</p>
+                {fileInfo[file.name] && fileInfo[file.name].status === "uploading" && (
                   <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 flex items-center">
                     <IconLoader2 className="animate-spin mr-1 h-3 w-3" /> Processing...
                   </p>
                 )}
-                {fileInfo[file.name] && fileInfo[file.name].status === 'error' && (
+                {fileInfo[file.name] && fileInfo[file.name].status === "error" && (
                   <p className="text-xs text-red-500 dark:text-red-400 mt-1">
                     Error: {fileInfo[file.name].error}
                   </p>
@@ -215,10 +286,11 @@ export function GridPattern() {
           return (
             <div
               key={`${col}-${row}`}
-              className={`w-10 h-10 flex flex-shrink-0 rounded-[2px] ${index % 2 === 0
-                ? "bg-gray-50 dark:bg-neutral-950"
-                : "bg-gray-50 dark:bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
-                }`}
+              className={`w-10 h-10 flex flex-shrink-0 rounded-[2px] ${
+                index % 2 === 0
+                  ? "bg-gray-50 dark:bg-neutral-950"
+                  : "bg-gray-50 dark:bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
+              }`}
             />
           );
         })

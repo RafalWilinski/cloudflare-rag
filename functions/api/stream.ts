@@ -16,10 +16,6 @@ User message: "${content}"
 
 Provide 5 queries, one per line and nothing else:`;
 
-  // const { response } = (await ai.run("@cf/meta/llama-3.1-8b-instruct", {
-  //   messages: [{ role: "user", content: prompt }],
-  // })) as { response: string };
-
   const response = await llmResponse({
     accountId: env.CLOUDFLARE_ACCOUNT_ID,
     messages: [{ role: "user", content: prompt }],
@@ -37,7 +33,7 @@ Provide 5 queries, one per line and nothing else:`;
     .split("\n")
     .filter((query) => query.trim() !== "")
     .slice(1, 5);
-  console.log({ queries });
+
   return queries;
 }
 
@@ -49,9 +45,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   ctx.waitUntil(
     (async () => {
       const json = await ctx.request.json();
-      const { provider, model } = json;
-      const messages: RoleScopedChatInput[] =
-        json.messages as RoleScopedChatInput[];
+      const { provider, model, sessionId } = json;
+      const messages: RoleScopedChatInput[] = json.messages as RoleScopedChatInput[];
       const lastMessage = messages[messages.length - 1];
       const query = lastMessage.content;
 
@@ -59,16 +54,12 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       const textEncoder = new TextEncoder();
 
       await writer.write(
-        textEncoder.encode(
-          `data: {"message": "Rewriting message to queries..."}\n\n`
-        )
+        textEncoder.encode(`data: {"message": "Rewriting message to queries..."}\n\n`)
       );
       const queries = await rewriteToQueries(query, ctx.env);
 
       const queryVectors: EmbeddingResponse[] = await Promise.all(
-        queries.map((q) =>
-          ctx.env.AI.run("@cf/baai/bge-large-en-v1.5", { text: [q] })
-        )
+        queries.map((q) => ctx.env.AI.run("@cf/baai/bge-large-en-v1.5", { text: [q] }))
       );
 
       const queryingVectorIndexMsg = {
@@ -76,11 +67,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         queries,
       };
 
-      await writer.write(
-        textEncoder.encode(
-          `data: ${JSON.stringify(queryingVectorIndexMsg)}\n\n`
-        )
-      );
+      await writer.write(textEncoder.encode(`data: ${JSON.stringify(queryingVectorIndexMsg)}\n\n`));
 
       const allResults = await Promise.all(
         queryVectors.map((qv) =>
@@ -89,15 +76,16 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
             returnValues: true,
             returnMetadata: "all",
             namespace: "default",
+            filter: {
+              sessionId,
+            },
           })
         )
       );
 
       const allResultsFlattened = Array.from(
         new Set(allResults.flatMap((r) => r.matches.map((m) => m.id)))
-      ).map((id) =>
-        allResults.flatMap((r) => r.matches).find((m) => m.id === id)
-      );
+      ).map((id) => allResults.flatMap((r) => r.matches).find((m) => m.id === id));
 
       const relevantDocs = await db
         .select({ text: documentChunks.text })
@@ -115,9 +103,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         message: "Found relevant documents...",
         relevantContext: relevantTexts,
       };
-      await writer.write(
-        textEncoder.encode(`data: ${JSON.stringify(relevantDocsMsg)}\n\n`)
-      );
+      await writer.write(textEncoder.encode(`data: ${JSON.stringify(relevantDocsMsg)}\n\n`));
 
       messages.push({
         role: "user",
