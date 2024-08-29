@@ -2,23 +2,36 @@ import { Ai, RoleScopedChatInput } from "@cloudflare/workers-types";
 import { inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { documentChunks } from "schema";
-import { streamLLMResponse } from "~/lib/aiGateway";
+import { llmResponse, streamLLMResponse } from "~/lib/aiGateway";
 
 interface EmbeddingResponse {
   shape: number[];
   data: number[][];
 }
 
-async function rewriteToQueries(content: string, ai: Ai): Promise<string[]> {
+async function rewriteToQueries(content: string, env: Env): Promise<string[]> {
   const prompt = `Given the following user message, rewrite it into 5 distinct queries that could be used to search for relevant information. Each query should focus on different aspects or potential interpretations of the original message:
 
 User message: "${content}"
 
 Provide 5 queries, one per line and nothing else:`;
 
-  const { response } = (await ai.run("@cf/meta/llama-3.1-8b-instruct", {
+  // const { response } = (await ai.run("@cf/meta/llama-3.1-8b-instruct", {
+  //   messages: [{ role: "user", content: prompt }],
+  // })) as { response: string };
+
+  const response = await llmResponse({
+    accountId: env.CLOUDFLARE_ACCOUNT_ID,
     messages: [{ role: "user", content: prompt }],
-  })) as { response: string };
+    apiKeys: {
+      openai: env.OPENAI_API_KEY,
+      groq: env.GROQ_API_KEY,
+      anthropic: env.ANTHROPIC_API_KEY,
+    },
+    model: "llama-3.1-8b-instant",
+    provider: "groq",
+    AI: env.AI,
+  });
 
   const queries = response
     .split("\n")
@@ -50,7 +63,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
           `data: {"message": "Rewriting message to queries..."}\n\n`
         )
       );
-      const queries = await rewriteToQueries(query, ctx.env.AI as Ai);
+      const queries = await rewriteToQueries(query, ctx.env);
 
       const queryVectors: EmbeddingResponse[] = await Promise.all(
         queries.map((q) =>
@@ -58,11 +71,14 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         )
       );
 
+      const queryingVectorIndexMsg = {
+        message: "Querying vector index...",
+        queries,
+      };
+
       await writer.write(
         textEncoder.encode(
-          `data: {"message": "Querying vector index...", "queries": "${JSON.stringify(
-            queries
-          )}"}\n\n`
+          `data: ${JSON.stringify(queryingVectorIndexMsg)}\n\n`
         )
       );
 
@@ -95,12 +111,12 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
       const relevantTexts = relevantDocs.map((doc) => doc.text).join("\n\n");
 
+      const relevantDocsMsg = {
+        message: "Found relevant documents...",
+        relevantContext: relevantTexts,
+      };
       await writer.write(
-        textEncoder.encode(
-          `data: {"message": "Found relevant documents...", "relevantContext": "${JSON.stringify(
-            relevantTexts
-          )}"}\n\n`
-        )
+        textEncoder.encode(`data: ${JSON.stringify(relevantDocsMsg)}\n\n`)
       );
 
       messages.push({
@@ -123,12 +139,6 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
           provider,
           AI: ctx.env.AI,
         });
-
-        console.log(
-          Object.keys(stream),
-          typeof stream,
-          `isBody? ${!!(stream as Response).body}`
-        );
 
         writer.releaseLock();
 

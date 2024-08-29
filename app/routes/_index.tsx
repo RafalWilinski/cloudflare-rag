@@ -58,7 +58,6 @@ export default function ChatApp() {
       });
 
       for await (let event of response) {
-        console.log("event", event);
         try {
           const parsedChunk = JSON.parse(
             event?.data?.trim().replace(/^data:\s*/, "") || ""
@@ -71,19 +70,30 @@ export default function ChatApp() {
             "";
 
           if (newContent) {
-            setInformativeMessage(""); // Clear informative message when response starts
+            // console.log(newContent); // This is invoked just once
+            setInformativeMessage("");
 
+            // This works incorrectly being invoked sometimes twice adding the same content!
             setMessages((prevMessages) => {
-              const newMessages = [...prevMessages];
-              if (newMessages[newMessages.length - 1]?.role === "assistant") {
-                newMessages[newMessages.length - 1].content += newContent;
+              const lastMessage = prevMessages[prevMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                // Check if the new content is already at the end of the last message
+                if (!lastMessage.content.endsWith(newContent)) {
+                  return [
+                    ...prevMessages.slice(0, -1),
+                    {
+                      ...lastMessage,
+                      content: lastMessage.content + newContent,
+                    },
+                  ];
+                }
               } else {
-                newMessages.push({
-                  content: newContent,
-                  role: "assistant",
-                });
+                return [
+                  ...prevMessages,
+                  { content: newContent, role: "assistant" },
+                ];
               }
-              return newMessages;
+              return prevMessages; // Return unchanged if content was already added
             });
           } else if (parsedChunk.message) {
             console.log("Informative message:", parsedChunk.message);
