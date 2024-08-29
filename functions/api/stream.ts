@@ -106,8 +106,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       await writer.write(textEncoder.encode(`data: ${JSON.stringify(relevantDocsMsg)}\n\n`));
 
       messages.push({
-        role: "user",
-        content: `Relevant context from attached documents:\n${relevantTexts}`,
+        role: "assistant",
+        content: `The following queries were made:\n${queries.join(
+          "\n"
+        )}\n\nRelevant context from attached documents:\n${relevantTexts}`,
       });
 
       const apiKeys = {

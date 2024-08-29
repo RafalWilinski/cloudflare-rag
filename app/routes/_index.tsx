@@ -26,7 +26,7 @@ export default function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [informativeMessage, setInformativeMessage] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
-  const [model, setModel] = useState("llama");
+  const [model, setModel] = useState("llama-3.1-8b-instant");
   const [provider, setProvider] = useState("groq");
   const [waitingTime, setWaitingTime] = useState(0);
   const timerRef = useRef<number | null>(null);
