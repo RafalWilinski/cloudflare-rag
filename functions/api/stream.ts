@@ -1,4 +1,4 @@
-import { Ai, RoleScopedChatInput } from "@cloudflare/workers-types";
+import { RoleScopedChatInput } from "@cloudflare/workers-types";
 import { inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { documentChunks } from "schema";
@@ -29,13 +29,17 @@ Provide 5 queries, one per line and nothing else:`;
     AI: env.AI,
   });
 
+  const regex = /^\d+\.\s*"|"$/gm;
   const queries = response
+    .replace(regex, "")
     .split("\n")
     .filter((query) => query.trim() !== "")
     .slice(1, 5);
 
   return queries;
 }
+
+const systemMessage = `You are a helpful assistant that answers questions based on the provided context. When giving a response, always include the source of the information in the format [1], [2], [3] etc.`;
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { readable, writable } = new TransformStream();
@@ -47,6 +51,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       const json = await ctx.request.json();
       const { provider, model, sessionId } = json;
       const messages: RoleScopedChatInput[] = json.messages as RoleScopedChatInput[];
+      messages.unshift({ role: "system", content: systemMessage });
       const lastMessage = messages[messages.length - 1];
       const query = lastMessage.content;
 
@@ -97,11 +102,14 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
           )
         );
 
-      const relevantTexts = relevantDocs.map((doc) => doc.text).join("\n\n");
+      const relevantTexts = relevantDocs
+        .map((doc, index) => `[${index + 1}]: ${doc.text}`)
+        .join("\n\n");
 
       const relevantDocsMsg = {
         message: "Found relevant documents...",
-        relevantContext: relevantTexts,
+        relevantContext: relevantDocs,
+        queries,
       };
       await writer.write(textEncoder.encode(`data: ${JSON.stringify(relevantDocsMsg)}\n\n`));
 

@@ -33,6 +33,8 @@ export default function ChatApp() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [relevantContext, setRelevantContext] = useState<{ text: string }[]>([]);
+  const [queries, setQueries] = useState<string[]>([]);
 
   useEffect(() => {
     setSessionId(crypto.randomUUID());
@@ -44,6 +46,7 @@ export default function ChatApp() {
     if (inputMessage.trim()) {
       setMessages([...messages, { content: inputMessage, role: "user" }]);
       setInputMessage("");
+      setRelevantContext([]); // Reset relevant context for new message
 
       const response = await stream("/api/stream", {
         method: "POST",
@@ -94,6 +97,13 @@ export default function ChatApp() {
           } else if (parsedChunk.message) {
             console.log("Informative message:", parsedChunk.message);
             setInformativeMessage(parsedChunk.message);
+          }
+
+          if (parsedChunk.relevantContext) {
+            setRelevantContext(parsedChunk.relevantContext);
+          }
+          if (parsedChunk.queries) {
+            setQueries(parsedChunk.queries);
           }
         } catch (error) {
           console.log("Non-JSON chunk received:", event?.data);
@@ -157,7 +167,7 @@ export default function ChatApp() {
       <Toaster />
       <button
         onClick={toggleSidebar}
-        className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-gray-200"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-200"
       >
         ☰
       </button>
@@ -166,7 +176,7 @@ export default function ChatApp() {
         href="https://github.com/RafalWilinski/cloudflare-rag"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1"
+        className="fixed top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1 opacity-100 z-50"
       >
         <IconBrandGithub className="w-4 h-4" />
         <AnimatedShinyText>Fork or star on Github</AnimatedShinyText>
@@ -176,7 +186,7 @@ export default function ChatApp() {
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-10 flex flex-col`}
+        } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
       >
         <div className="flex-grow">
           <FileUpload onChange={() => {}} sessionId={sessionId} setSessionId={setSessionId} />
@@ -335,6 +345,30 @@ export default function ChatApp() {
                 </svg>
                 <span className="text-sm text-gray-500">{informativeMessage}</span>
                 <span className="text-sm text-gray-400 ml-2">({waitingTime.toFixed(1)}s)</span>
+              </div>
+            </div>
+          )}
+          {queries.length > 0 && (
+            <div className="mb-4 text-left">
+              <div className="inline-flex items-center p-2 rounded-full px-4 py-2 bg-gray-100 flex flex-col">
+                <span className="text-sm text-gray-500">Queries:</span>
+                <ul className="list-disc list-inside text-sm text-gray-500">
+                  {queries.map((query, index) => (
+                    <li key={index}>{query}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {relevantContext.length > 0 && (
+            <div className="mb-4 text-left">
+              <div className="inline-flex items-center p-2 rounded-full px-4 py-2 bg-gray-100 flex flex-col">
+                <span className="text-sm text-gray-500">Relevant context:</span>
+                <ul className="list-disc list-inside text-sm text-gray-500">
+                  {relevantContext.map((context, index) => (
+                    <li key={index}>{context?.text}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
