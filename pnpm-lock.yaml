@@ -56,6 +56,12 @@ importers:
       eventsource:
         specifier: ^2.0.2
         version: 2.0.2
+      fetch-event-stream:
+        specifier: ^0.1.5
+        version: 0.1.5
+      fetch-sse:
+        specifier: ^1.0.23
+        version: 1.0.23
       framer-motion:
         specifier: ^11.3.30
         version: 11.3.30(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -2728,6 +2734,10 @@ packages:
 
   fetch-event-stream@0.1.5:
     resolution: {integrity: sha512-V1PWovkspxQfssq/NnxoEyQo1DV+MRK/laPuPblIZmSjMN8P5u46OhlFQznSr9p/t0Sp8Uc6SbM3yCMfr0KU8g==}
+
+  fetch-sse@1.0.23:
+    resolution: {integrity: sha512-HX2IHP69JH0xWzIJ7KsshCG1zHkRCS1lZ9MG1eJ0PBTbkjURhJnMVSPPcZJ3vYSY9np6LPm0rZyuGja9aJxolw==}
+    engines: {node: '>=17.5'}
 
   file-entry-cache@6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
@@ -7758,6 +7768,8 @@ snapshots:
       format: 0.2.2
 
   fetch-event-stream@0.1.5: {}
+
+  fetch-sse@1.0.23: {}
 
   file-entry-cache@6.0.1:
     dependencies:

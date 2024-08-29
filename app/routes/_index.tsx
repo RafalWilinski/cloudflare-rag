@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Markdown from "react-markdown";
 import { Toaster } from "sonner";
+import { stream } from "fetch-event-stream";
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
 import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
@@ -43,10 +44,10 @@ export default function ChatApp() {
       setMessages([...messages, { content: inputMessage, role: "user" }]);
       setInputMessage("");
 
-      const response = await fetch("/api/stream", {
+      const response = await stream("/api/stream", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/event-stream",
         },
         body: JSON.stringify({
           messages: [...messages, { content: inputMessage, role: "user" }],
@@ -56,52 +57,40 @@ export default function ChatApp() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      for await (let event of response) {
+        console.log("event", event);
+        try {
+          const parsedChunk = JSON.parse(
+            event?.data?.trim().replace(/^data:\s*/, "") || ""
+          );
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+          const newContent =
+            parsedChunk.response ||
+            parsedChunk.choices?.[0]?.delta?.content ||
+            parsedChunk.delta?.text ||
+            "";
 
-      if (reader) {
-        let currentAssistantMessage = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
+          if (newContent) {
+            setInformativeMessage(""); // Clear informative message when response starts
 
-          try {
-            const parsedChunk = JSON.parse(
-              chunk.trim().replace(/^data:\s*/, "")
-            );
-            if (parsedChunk.response) {
-              currentAssistantMessage +=
-                parsedChunk.response ||
-                parsedChunk.choices?.[0]?.delta?.content ||
-                parsedChunk.delta?.text ||
-                "";
-              setInformativeMessage(""); // Clear informative message when response starts
-
-              setMessages((prevMessages) => {
-                const newMessages = [...prevMessages];
-                if (newMessages[newMessages.length - 1]?.role === "assistant") {
-                  newMessages[newMessages.length - 1].content =
-                    currentAssistantMessage;
-                } else {
-                  newMessages.push({
-                    content: currentAssistantMessage,
-                    role: "assistant",
-                  });
-                }
-                return newMessages;
-              });
-            } else if (parsedChunk.message) {
-              console.log("Informative message:", parsedChunk.message);
-              setInformativeMessage(parsedChunk.message);
-            }
-          } catch (error) {
-            console.log("Non-JSON chunk received:", chunk);
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages];
+              if (newMessages[newMessages.length - 1]?.role === "assistant") {
+                newMessages[newMessages.length - 1].content += newContent;
+              } else {
+                newMessages.push({
+                  content: newContent,
+                  role: "assistant",
+                });
+              }
+              return newMessages;
+            });
+          } else if (parsedChunk.message) {
+            console.log("Informative message:", parsedChunk.message);
+            setInformativeMessage(parsedChunk.message);
           }
+        } catch (error) {
+          console.log("Non-JSON chunk received:", event?.data);
         }
       }
     }

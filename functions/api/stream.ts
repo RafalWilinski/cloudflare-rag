@@ -60,7 +60,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
       await writer.write(
         textEncoder.encode(
-          `data: {"message": "Querying vector index...", "queries": "${queries}"}\n\n`
+          `data: {"message": "Querying vector index...", "queries": "${JSON.stringify(
+            queries
+          )}"}\n\n`
         )
       );
 
@@ -95,7 +97,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
       await writer.write(
         textEncoder.encode(
-          `data: {"message": "Found relevant documents...", "relevantContext": "${relevantTexts}"}\n\n`
+          `data: {"message": "Found relevant documents...", "relevantContext": "${JSON.stringify(
+            relevantTexts
+          )}"}\n\n`
         )
       );
 
@@ -141,6 +145,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",
+      "Transfer-Encoding": "chunked",
+      "content-encoding": "identity",
     },
   });
 };
