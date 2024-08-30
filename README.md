@@ -2,7 +2,7 @@
 
 > This is a fullstack example of how to build a RAG (Retrieval Augmented Generation) app with Cloudflare. It uses Cloudflare Workers, Pages, D1, R2, and AI SDK.
 
-[![Watch the video](./assets/video_thumbnail.png)](./assets/cloudflare_rag_demo.mp4)
+https://github.com/user-attachments/assets/cbaa0380-7ad6-448d-ad44-e83772a9cf3f
 
 ## Development
 
