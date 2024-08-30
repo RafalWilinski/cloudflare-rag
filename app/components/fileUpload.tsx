@@ -32,10 +32,12 @@ export const FileUpload = ({
   onChange,
   sessionId,
   setSessionId,
+  setSelectedExample,
 }: {
   onChange?: (files: File[]) => void;
   sessionId: string;
   setSessionId: (sessionId: string) => void;
+  setSelectedExample: (example: (typeof exampleFiles)[0] | null) => void;
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [fileInfo, setFileInfo] = useState<{
@@ -206,6 +208,7 @@ export const FileUpload = ({
               onClick={(e) => {
                 e.preventDefault();
                 setSessionId(example.sessionId);
+                setSelectedExample(example);
                 handleFileChange([
                   new File([example.name], example.fileName, {
                     type: "TEST",

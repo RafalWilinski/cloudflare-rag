@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Button } from "../components/button";
+import { exampleFiles } from "../lib/exampleFiles";
 
 export const meta = () => {
   return [{ title: `Fullstack Cloudflare RAG` }];
@@ -45,12 +46,13 @@ export default function ChatApp() {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [relevantContext, setRelevantContext] = useState<{ text: string }[]>([]);
   const [queries, setQueries] = useState<string[]>([]);
+  const [selectedExample, setSelectedExample] = useState<(typeof exampleFiles)[0] | null>(null);
 
   useEffect(() => {
     setSessionId(crypto.randomUUID());
   }, []);
 
-  const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = async (event: React.FormEvent<HTMLFormElement> | string) => {
     if (typeof event !== "string") {
       event.preventDefault();
     }
@@ -203,7 +205,12 @@ export default function ChatApp() {
         } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
       >
         <div className="flex-grow">
-          <FileUpload onChange={() => {}} sessionId={sessionId} setSessionId={setSessionId} />
+          <FileUpload
+            onChange={() => {}}
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            setSelectedExample={setSelectedExample}
+          />
         </div>
         {sessionId && (
           <div className="mt-auto pt-4 text-xs text-gray-500 break-all">
@@ -232,7 +239,7 @@ export default function ChatApp() {
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-zinc-900">
                   <SelectGroup>
                     <SelectLabel
                       style={{
@@ -316,6 +323,25 @@ export default function ChatApp() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+
+              {selectedExample && (
+                <div className="mt-8 text-left w-full max-w-md">
+                  <h3 className="font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                    Example questions for {selectedExample.name}:
+                  </h3>
+                  <ul className="list-disc list-inside space-y-2">
+                    {selectedExample.questions.map((question, index) => (
+                      <li
+                        key={index}
+                        className="text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer hover:text-blue-500"
+                        onClick={() => handleSendMessage(question)}
+                      >
+                        {question}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ) : (
             <>
