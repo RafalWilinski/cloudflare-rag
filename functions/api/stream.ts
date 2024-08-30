@@ -46,6 +46,19 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const writer = writable.getWriter();
   const ipAddress = ctx.request.headers.get("cf-connecting-ip") || "";
 
+  const rateLimit = await ctx.env.rate_limiter.get(ipAddress);
+  if (rateLimit) {
+    const lastRequestTime = parseInt(rateLimit);
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (currentTime - lastRequestTime < 3) {
+      return new Response("Too many requests", { status: 429 });
+    }
+  }
+
+  await ctx.env.rate_limiter.put(ipAddress, Math.floor(Date.now() / 1000).toString(), {
+    expirationTtl: 60,
+  });
+
   ctx.waitUntil(
     (async () => {
       const json = await ctx.request.json();

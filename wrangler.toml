@@ -14,7 +14,7 @@ binding = "VECTORIZE_INDEX"
 index_name = "cloudflare-rag-index"
 
 [[d1_databases]]
-binding = "DB"                                       # i.e. available in your Worker on env.DB
+binding = "DB"                                       
 database_name = "cloudflare-rag"
 database_id = "d81eb68d-95a3-45aa-8260-3e47f0ebe80a" # replace with your database id
 migrations_dir = "drizzle"
@@ -22,3 +22,7 @@ migrations_dir = "drizzle"
 [[r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "cloudflare-rag-bucket"
+
+[[kv_namespaces]]
+binding = "rate_limiter"
+id = "71cc545e20644b7099d296c5c45ffe60" # replace with your KV id
