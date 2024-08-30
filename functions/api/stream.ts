@@ -247,7 +247,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         await streamResponse(params, ctx.env, writable);
       } catch (error) {
         console.error(error);
-        await writer.write(new TextEncoder().encode(`data: ${JSON.stringify(error)}\n\n`));
+        await writer.write(new TextEncoder().encode(`data: ${JSON.stringify({ message: (error as Error).message })}\n\n`));
         await writer.close();
       }
     })()
