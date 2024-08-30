@@ -5,7 +5,7 @@ export const exampleFiles = [
     sessionId: "test_cloudflare_earnings",
     questions: [
       "What was the revenue growth rate in Q2?",
-      "How did the number of active users change year over year?",
+      "What are the example questions that the document answers?",
       "What were the key performance indicators for the quarter?",
       "What are the key outcomes from this call?",
     ],
