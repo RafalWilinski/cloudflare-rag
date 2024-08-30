@@ -21,6 +21,7 @@
     "@langchain/core": "^0.2.28",
     "@langchain/textsplitters": "^0.0.3",
     "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@remix-run/cloudflare": "^2.11.1",
@@ -48,6 +49,7 @@
     "tailwindcss-animate": "^1.0.7",
     "ulidx": "^2.4.1",
     "unpdf": "^0.11.0",
+    "vaul": "^0.9.1",
     "workers-ai-provider": "^0.0.10",
     "zod": "^3.23.8"
   },

@@ -76,6 +76,7 @@ export const FileUpload = ({
         ]);
 
         toast.success(`Successfully uploaded ${file.name}`);
+
         return;
       }
 

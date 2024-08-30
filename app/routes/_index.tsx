@@ -7,6 +7,15 @@ import { FileUpload } from "../components/fileUpload";
 import AnimatedShinyText from "~/components/magicui/animated-shiny-text";
 import { IconBrandGithub } from "@tabler/icons-react";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "~/components/ui/drawer";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -15,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Button } from "../components/button";
 
 export const meta = () => {
   return [{ title: `Fullstack Cloudflare RAG` }];
@@ -41,10 +51,14 @@ export default function ChatApp() {
   }, []);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    if (typeof event !== "string") {
+      event.preventDefault();
+    }
+    console.log("event", event, typeof event);
 
-    if (inputMessage.trim()) {
-      setMessages([...messages, { content: inputMessage, role: "user" }]);
+    if (typeof event === "string" || inputMessage.trim()) {
+      const newMsg = { content: typeof event === "string" ? event : inputMessage, role: "user" };
+      setMessages([...messages, newMsg]);
       setInputMessage("");
       setRelevantContext([]); // Reset relevant context for new message
 
@@ -54,7 +68,7 @@ export default function ChatApp() {
           "Content-Type": "text/event-stream",
         },
         body: JSON.stringify({
-          messages: [...messages, { content: inputMessage, role: "user" }],
+          messages: [...messages, newMsg],
           sessionId,
           model,
           provider,
@@ -348,29 +362,41 @@ export default function ChatApp() {
               </div>
             </div>
           )}
-          {queries.length > 0 && (
-            <div className="mb-4 text-left">
-              <div className="inline-flex items-center p-2 rounded-full px-4 py-2 bg-gray-100 flex flex-col">
-                <span className="text-sm text-gray-500">Queries:</span>
-                <ul className="list-disc list-inside text-sm text-gray-500">
-                  {queries.map((query, index) => (
-                    <li key={index}>{query}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+
           {relevantContext.length > 0 && (
-            <div className="mb-4 text-left">
-              <div className="inline-flex items-center p-2 rounded-full px-4 py-2 bg-gray-100 flex flex-col">
-                <span className="text-sm text-gray-500">Relevant context:</span>
-                <ul className="list-disc list-inside text-sm text-gray-500">
-                  {relevantContext.map((context, index) => (
-                    <li key={index}>{context?.text}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <Drawer>
+              <DrawerTrigger>
+                <Button variant="outline" className="border-gray-300 dark:border-zinc-600">
+                  See relevant context
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="bg-white dark:bg-zinc-900">
+                <DrawerHeader>
+                  <DrawerTitle>Queries used against vector database</DrawerTitle>
+                  <DrawerDescription>
+                    <ol className="list-disc list-inside text-sm text-gray-500">
+                      {queries.map((query, index) => (
+                        <li key={index}>{query}</li>
+                      ))}
+                    </ol>
+                  </DrawerDescription>
+
+                  <DrawerTitle>Relevant context fetched from documents</DrawerTitle>
+                  <DrawerDescription>
+                    <ol className="list-disc list-inside text-sm text-gray-500">
+                      {relevantContext.map((context, index) => (
+                        <li key={index}>{context.text}</li>
+                      ))}
+                    </ol>
+                  </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter>
+                  {/* <DrawerClose>
+                  <Button variant="outline">Cancel</Button>
+                </DrawerClose> */}
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           )}
         </div>
 
