@@ -49,14 +49,17 @@ interface DocumentChunk {
 
 async function searchDocumentChunks(searchTerms: string[], db: DrizzleD1Database<any>) {
   const queries = searchTerms.filter(Boolean).map(
-    (term) => sql`
-    SELECT document_chunks.*, document_chunks_fts.rank
-    FROM document_chunks_fts
-    JOIN document_chunks ON document_chunks_fts.id = document_chunks.id
-    WHERE document_chunks_fts MATCH ${term.trim().replace(/"/g, "").replace("?", "")}
-    ORDER BY rank DESC
-    LIMIT 5
-  `
+    (term) => {
+      const sanitizedTerm = term.trim().replace(/[^\w\s]/g, '');
+      return sql`
+        SELECT document_chunks.*, document_chunks_fts.rank
+        FROM document_chunks_fts
+        JOIN document_chunks ON document_chunks_fts.id = document_chunks.id
+        WHERE document_chunks_fts MATCH ${sanitizedTerm}
+        ORDER BY rank DESC
+        LIMIT 5
+      `;
+    }
   );
 
   const results = await Promise.all(
