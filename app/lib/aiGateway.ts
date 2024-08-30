@@ -66,6 +66,19 @@ export async function streamLLMResponse({
       },
     },
     {
+      provider: "openai",
+      endpoint: "chat/completions",
+      headers: {
+        authorization: `Bearer ${apiKeys.openai}`,
+        "Content-Type": "application/json",
+      },
+      query: {
+        model: "gpt-4o",
+        stream,
+        messages,
+      },
+    },
+    {
       provider: "anthropic",
       endpoint: "v1/messages",
       headers: {
@@ -77,6 +90,34 @@ export async function streamLLMResponse({
         model: "claude-3-haiku-20240307",
         stream,
         max_tokens: 1024,
+        messages,
+      },
+    },
+    {
+      provider: "anthropic",
+      endpoint: "v1/messages",
+      headers: {
+        "anthropic-version": "2023-06-01",
+        "x-api-key": apiKeys.anthropic,
+        "Content-Type": "application/json",
+      },
+      query: {
+        model: "claude-3-5-sonnet-20240620",
+        stream,
+        max_tokens: 1024,
+        messages,
+      },
+    },
+    {
+      provider: "groq",
+      endpoint: "chat/completions",
+      headers: {
+        Authorization: `Bearer ${apiKeys.groq}`,
+        "Content-Type": "application/json",
+      },
+      query: {
+        stream,
+        model: "llama-3.1-70b-versatile",
         messages,
       },
     },
