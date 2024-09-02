@@ -56,6 +56,6 @@ npm run deploy
 
 ## Hybrid Search RAG
 
-![Hybrid Search RAG](./hybrid-rag.png)
+![Hybrid Search RAG](./assets/hybrid-rag.png)
 
 This project uses a combination of classical Full Text Search (sparse) against Cloudflare D1 and Hybrid Search with embeddings against Vectorize (dense) to provide the best of both worlds providing the most applicable context to the LLM.

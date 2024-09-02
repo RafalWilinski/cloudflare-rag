@@ -184,6 +184,7 @@ export default function ChatApp() {
       <button
         onClick={toggleSidebar}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-200"
+        style={{ zIndex: 1000 }} // Ensure the button is on top
       >
         ☰
       </button>
@@ -193,6 +194,7 @@ export default function ChatApp() {
         target="_blank"
         rel="noopener noreferrer"
         className="fixed top-0 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white p-2 rounded-full border border-gray-200 px-4 cursor-pointer mt-1 opacity-100 z-50"
+        style={{ zIndex: 1000 }} // Ensure the link is on top
       >
         <IconBrandGithub className="w-4 h-4" />
         <AnimatedShinyText>Fork or star on Github</AnimatedShinyText>
@@ -203,6 +205,7 @@ export default function ChatApp() {
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
+        style={{ maxHeight: "100vh", overflowY: "auto" }} // Ensure sidebar is scrollable
       >
         <div className="flex-grow">
           <FileUpload
@@ -225,6 +228,7 @@ export default function ChatApp() {
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto p-4"
           onScroll={handleScroll}
+          style={{ maxHeight: "calc(100vh - 64px)" }} // Ensure main content is scrollable
         >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
