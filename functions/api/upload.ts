@@ -44,49 +44,33 @@ async function insertDocument(
   return db.insert(documents).values(row).returning({ insertedId: documents.id });
 }
 
-async function generateEmbeddings(
-  AI: any,
-  chunks: string[]
-): Promise<{ data: number[][]; chunks: string[] }> {
-  console.log("Generating embeddings...", { chunks });
-
-  const chunkSize = 10;
-  const embeddingPromises = [];
-
-  for (let i = 0; i < chunks.length; i += chunkSize) {
-    const chunkBatch = chunks.slice(i, i + chunkSize);
-    embeddingPromises.push(
-      AI.run("@cf/baai/bge-large-en-v1.5", {
-        text: chunkBatch,
-      })
-    );
-  }
-
-  const results = await Promise.all(embeddingPromises);
-  const data = results.flatMap((result) => result.data);
-
-  return { data, chunks };
-}
-
 async function insertVectors(
   db: DrizzleD1Database<any>,
   VECTORIZE_INDEX: VectorizeIndex,
-  embeddings: { data: number[][]; chunks: string[] },
+  AI: any,
+  chunks: string[],
   file: File,
   sessionId: string,
-  documentId: string
+  documentId: string,
+  streamResponse: (message: any) => Promise<void>
 ) {
   console.log("Inserting vectors...", { file, sessionId, documentId });
 
   const chunkSize = 10;
   const insertPromises = [];
+  let progress = 0;
 
-  for (let i = 0; i < embeddings.chunks.length; i += chunkSize) {
-    const chunkBatch = embeddings.chunks.slice(i, i + chunkSize);
-    const embeddingBatch = embeddings.data.slice(i, i + chunkSize);
+  for (let i = 0; i < chunks.length; i += chunkSize) {
+    const chunkBatch = chunks.slice(i, i + chunkSize);
 
     insertPromises.push(
       (async () => {
+        // Generate embeddings for the current batch
+        const embeddingResult = await AI.run("@cf/baai/bge-large-en-v1.5", {
+          text: chunkBatch,
+        });
+        const embeddingBatch: number[][] = embeddingResult.data;
+
         // Insert chunks into the database
         const chunkInsertResults = await db
           .insert(documentChunks)
@@ -112,6 +96,12 @@ async function insertVectors(
             metadata: { sessionId, documentId, chunkId: chunkIds[index], text: chunkBatch[index] },
           }))
         );
+
+        progress += (chunkSize / chunks.length) * 100;
+        await streamResponse({
+          message: `Embedding... (${progress.toFixed(2)}%)`,
+          progress,
+        });
       })()
     );
   }
@@ -120,15 +110,24 @@ async function insertVectors(
 }
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
-  const request = ctx.request;
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const { request } = ctx;
   const ipAddress = request.headers.get("cf-connecting-ip") || "";
+
+  const streamResponse = async (message: any) => {
+    await writer.write(new TextEncoder().encode(`data: ${JSON.stringify(message)}\n\n`));
+  };
 
   const rateLimit = await ctx.env.rate_limiter.get(ipAddress);
   if (rateLimit) {
     const lastRequestTime = parseInt(rateLimit);
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime - lastRequestTime < 3) {
-      return new Response("Too many requests", { status: 429 });
+      return new Response(
+        `Too many requests (${currentTime - lastRequestTime}s since last request, ${ipAddress})`,
+        { status: 429 }
+      );
     }
   }
 
@@ -136,78 +135,101 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     expirationTtl: 60,
   });
 
-  if (request.method === "POST") {
-    try {
-      const formData = await ctx.request.formData();
-      const file = formData.get("pdf") as File;
-      const sessionId = formData.get("sessionId") as string;
-
-      if (exampleFiles.some((example) => example.sessionId === sessionId)) {
-        return new Response(
-          "You cannot upload files to test session with example files. Please reload the page and try again.",
-          { status: 400 }
-        );
-      }
-
-      const db = drizzle(ctx.env.DB);
-
-      if (!file || typeof file !== "object" || !("arrayBuffer" in file)) {
-        return new Response("Please upload a PDF file.", { status: 400 });
-      }
-
-      // Parallelize independent operations
-      const [r2Url, textContent] = await Promise.all([
-        uploadToR2(file, ctx.env.R2_BUCKET, sessionId),
-        extractTextFromPDF(file),
-      ]);
-
-      const insertResult = await insertDocument(db, file, textContent, sessionId, r2Url);
-
-      const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 500,
-        chunkOverlap: 100,
-      });
-
-      const chunks = await splitter.splitText(textContent);
-
-      const embeddings = await generateEmbeddings(ctx.env.AI, chunks);
-      await insertVectors(
-        db,
-        ctx.env.VECTORIZE_INDEX,
-        embeddings,
-        file,
-        sessionId,
-        insertResult[0].insertedId
-      );
-
-      const fileInfo = {
-        documentId: insertResult[0].insertedId,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        r2Url,
-        chunks,
-      };
-
-      return new Response(JSON.stringify(fileInfo), {
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      if (error instanceof DrizzleError) {
-        console.error("Drizzle error:", error.cause);
-      }
-      console.error("Error processing upload:", (error as Error).stack, Object.keys(error as any));
-      return new Response(
-        JSON.stringify({
-          error: `An error occurred while processing the upload: ${(error as Error).message}`,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+  if (request.method !== "POST") {
+    return new Response("Expected a POST request with a file", { status: 405 });
   }
 
-  return new Response("Expected a POST request with a file", { status: 400 });
+  ctx.waitUntil(
+    (async () => {
+      try {
+        const formData = await request.formData();
+        const file = formData.get("pdf") as File;
+        const sessionId = formData.get("sessionId") as string;
+
+        if (exampleFiles.some((example) => example.sessionId === sessionId)) {
+          await streamResponse({
+            error:
+              "You cannot upload files to test session with example files. Please reload the page and try again.",
+          });
+          await writer.close();
+          return;
+        }
+
+        const db = drizzle(ctx.env.DB);
+
+        if (!file || typeof file !== "object" || !("arrayBuffer" in file)) {
+          await streamResponse({
+            error: "Please upload a PDF file.",
+          });
+          await writer.close();
+          return;
+        }
+
+        // Parallelize independent operations
+        const [r2Url, textContent] = await Promise.all([
+          uploadToR2(file, ctx.env.R2_BUCKET, sessionId),
+          extractTextFromPDF(file),
+        ]);
+
+        await streamResponse({ message: "Extracted text from PDF" });
+
+        const insertResult = await insertDocument(db, file, textContent, sessionId, r2Url);
+
+        const splitter = new RecursiveCharacterTextSplitter({
+          chunkSize: 500,
+          chunkOverlap: 100,
+        });
+
+        const chunks = await splitter.splitText(textContent);
+        await streamResponse({ message: "Split text into chunks" });
+
+        await insertVectors(
+          db,
+          ctx.env.VECTORIZE_INDEX,
+          ctx.env.AI,
+          chunks,
+          file,
+          sessionId,
+          insertResult[0].insertedId,
+          streamResponse
+        );
+
+        const fileInfo = {
+          documentId: insertResult[0].insertedId,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          r2Url,
+          chunks,
+        };
+        console.log({ fileInfo });
+        await streamResponse({ message: "Inserted vectors into database", ...fileInfo });
+
+        await writer.close();
+      } catch (error) {
+        writer.close();
+        if (error instanceof DrizzleError) {
+          console.error("Drizzle error:", error.cause);
+        }
+        console.error(
+          "Error processing upload:",
+          (error as Error).stack,
+          Object.keys(error as any)
+        );
+        console.error(error);
+        await streamResponse({
+          error: `An error occurred while processing the upload: ${(error as Error).message}`,
+        });
+        await writer.close();
+      }
+    })()
+  );
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Transfer-Encoding": "chunked",
+      "content-encoding": "identity",
+    },
+  });
 };

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { IconUpload, IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone-esm";
 import { exampleFiles } from "../lib/exampleFiles";
+import { stream } from "fetch-event-stream";
 
 const mainVariant = {
   initial: {
@@ -43,7 +44,7 @@ export const FileUpload = ({
   const [fileInfo, setFileInfo] = useState<{
     [key: string]: {
       chunks: number;
-      status: "idle" | "uploading" | "success" | "error";
+      status: string;
       error?: string;
     };
   }>({});
@@ -84,7 +85,7 @@ export const FileUpload = ({
 
       setFileInfo((prev) => ({
         ...prev,
-        [file.name]: { chunks: 0, status: "uploading" },
+        [file.name]: { chunks: 0, status: "Uploading..." },
       }));
 
       const formData = new FormData();
@@ -92,25 +93,33 @@ export const FileUpload = ({
       formData.append("sessionId", sessionId);
 
       try {
-        const response = await fetch("/api/upload", {
+        const response = await stream("/api/upload", {
           method: "POST",
           body: formData,
         });
 
-        if (response.ok) {
-          const result: { chunks: number[] } = await response.json();
-          setFileInfo((prev) => ({
-            ...prev,
-            [file.name]: { chunks: result.chunks.length, status: "success" },
-          }));
-          toast.success(`Successfully uploaded ${file.name}`);
-        } else {
-          const errorText = await response.text();
-          setFileInfo((prev) => ({
-            ...prev,
-            [file.name]: { chunks: 0, status: "error", error: errorText },
-          }));
-          toast.error(`Failed to upload ${file.name}`);
+        for await (const event of response) {
+          const parsedChunk = JSON.parse(event?.data?.trim().replace(/^data:\s*/, "") || "");
+
+          if (parsedChunk.error) {
+            setFileInfo((prev) => ({
+              ...prev,
+              [file.name]: { chunks: 0, status: "error", error: parsedChunk.error },
+            }));
+            toast.error(parsedChunk.error);
+            return;
+          } else if (parsedChunk.chunks) {
+            setFileInfo((prev) => ({
+              ...prev,
+              [file.name]: { chunks: parsedChunk.chunks.length, status: "success" },
+            }));
+            toast.success(`Successfully uploaded ${file.name}`);
+          } else if (parsedChunk.message) {
+            setFileInfo((prev) => ({
+              ...prev,
+              [file.name]: { chunks: 0, status: parsedChunk.message },
+            }));
+          }
         }
       } catch (error) {
         setFileInfo((prev) => ({
@@ -244,11 +253,14 @@ export const FileUpload = ({
                     ` | ${fileInfo[file.name].chunks} chunks`}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{file.type}</p>
-                {fileInfo[file.name] && fileInfo[file.name].status === "uploading" && (
-                  <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 flex items-center">
-                    <IconLoader2 className="animate-spin mr-1 h-3 w-3" /> Processing...
-                  </p>
-                )}
+                {fileInfo[file.name] &&
+                  fileInfo[file.name].status &&
+                  fileInfo[file.name].status !== "success" && (
+                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 flex items-center">
+                      <IconLoader2 className="animate-spin mr-1 h-3 w-3" />{" "}
+                      {fileInfo[file.name] && fileInfo[file.name].status}
+                    </p>
+                  )}
                 {fileInfo[file.name] && fileInfo[file.name].status === "error" && (
                   <p className="text-xs text-red-500 dark:text-red-400 mt-1">
                     Error: {fileInfo[file.name].error}
