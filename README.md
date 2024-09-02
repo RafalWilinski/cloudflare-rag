@@ -4,6 +4,8 @@
 
 https://github.com/user-attachments/assets/cbaa0380-7ad6-448d-ad44-e83772a9cf3f
 
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/RafalWilinski/cloudflare-rag)
+
 ## Development
 
 Install dependencies:
@@ -17,6 +19,8 @@ Deploy necessary primitives:
 ```sh
 ./setup.sh
 ```
+
+Then, in `wrangler.toml`, set the `d1_databases.database_id` to your D1 database id and `kv_namespaces.rate_limiter` to your rate limiter KV namespace id.
 
 Then, create a `.dev.vars` file with your API keys:
 
