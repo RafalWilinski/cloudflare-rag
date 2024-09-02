@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
+/* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import { Toaster } from "sonner";
@@ -32,7 +34,9 @@ export const meta = () => {
 };
 
 export default function ChatApp() {
-  const [messages, setMessages] = useState<{ content: string; role: string }[]>([]);
+  const [messages, setMessages] = useState<{ content: string; role: string; isHidden?: boolean }[]>(
+    []
+  );
   const [inputMessage, setInputMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [informativeMessage, setInformativeMessage] = useState("");
@@ -70,7 +74,7 @@ export default function ChatApp() {
           "Content-Type": "text/event-stream",
         },
         body: JSON.stringify({
-          messages: [...messages, newMsg],
+          messages: [...messages, newMsg].map((m) => ({ role: m.role, content: m.content })),
           sessionId,
           model,
           provider,
@@ -88,25 +92,28 @@ export default function ChatApp() {
             "";
 
           if (newContent) {
-            // console.log(newContent); // This is invoked just once
             setInformativeMessage("");
 
             // This works incorrectly being invoked sometimes twice adding the same content!
             setMessages((prevMessages) => {
               const lastMessage = prevMessages[prevMessages.length - 1];
-              if (lastMessage?.role === "assistant") {
+              if (lastMessage?.role === "assistant" && !lastMessage.isHidden) {
                 // Check if the new content is already at the end of the last message
                 if (!lastMessage.content.endsWith(newContent)) {
                   return [
                     ...prevMessages.slice(0, -1),
                     {
                       ...lastMessage,
+                      isHidden: false,
                       content: lastMessage.content + newContent,
                     },
                   ];
                 }
               } else {
-                return [...prevMessages, { content: newContent, role: "assistant" }];
+                return [
+                  ...prevMessages,
+                  { content: newContent, role: "assistant", isHidden: false },
+                ];
               }
               return prevMessages; // Return unchanged if content was already added
             });
@@ -117,6 +124,17 @@ export default function ChatApp() {
 
           if (parsedChunk.relevantContext) {
             setRelevantContext(parsedChunk.relevantContext);
+            // Add relevant context to messages array
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                content:
+                  "Relevant context:\n" +
+                  parsedChunk.relevantContext.map((ctx: { text: string }) => ctx.text).join("\n"),
+                role: "assistant",
+                isHidden: true,
+              },
+            ]);
           }
           if (parsedChunk.queries) {
             setQueries(parsedChunk.queries);
@@ -130,7 +148,7 @@ export default function ChatApp() {
 
   useEffect(() => {
     if (informativeMessage) {
-      let startTime = Date.now();
+      const startTime = Date.now();
       timerRef.current = window.setInterval(() => {
         setWaitingTime((Date.now() - startTime) / 1000);
       }, 100);
@@ -205,7 +223,6 @@ export default function ChatApp() {
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
-        style={{ maxHeight: "100vh", overflowY: "auto" }} // Ensure sidebar is scrollable
       >
         <div className="flex-grow">
           <FileUpload
@@ -349,20 +366,22 @@ export default function ChatApp() {
             </div>
           ) : (
             <>
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
-                >
+              {messages
+                .filter((message) => !message.isHidden)
+                .map((message, index) => (
                   <div
-                    className={`inline-block p-2 rounded-full px-4 py-2 ${
-                      message.role === "user" ? "bg-gray-300" : ""
-                    } opacity-0 animate-fadeIn`}
+                    key={index}
+                    className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
                   >
-                    <Markdown className="prose">{message.content}</Markdown>
+                    <div
+                      className={`inline-block p-2 rounded-full px-4 py-2 ${
+                        message.role === "user" ? "bg-gray-300" : ""
+                      } opacity-0 animate-fadeIn`}
+                    >
+                      <Markdown className="prose">{message.content}</Markdown>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               <div ref={messagesEndRef} />
             </>
           )}
