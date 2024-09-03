@@ -87,4 +87,4 @@ This project is licensed under the terms of the MIT License.
 
 ## Consulting
 
-I [(Rafal)](https://rwilinski.ai) offers consulting services in building AI applications. If you need help with your project, please reach out to me on [Twitter](https://twitter.com/rafalwilinski).
+If you need help in building AI applications, please reach out to me on [Twitter](https://twitter.com/rafalwilinski) or via my [website](https://rwilinski.ai/). Happy to help!
