@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import { stream } from "fetch-event-stream";
 import { PlaceholdersAndVanishInput } from "../components/Input";
 import { FileUpload } from "../components/fileUpload";
@@ -120,6 +120,10 @@ export default function ChatApp() {
           } else if (parsedChunk.message) {
             console.log("Informative message:", parsedChunk.message);
             setInformativeMessage(parsedChunk.message);
+          } else if (parsedChunk.error) {
+            console.error("Error:", parsedChunk.error);
+            setInformativeMessage("");
+            toast.error(parsedChunk.error);
           }
 
           if (parsedChunk.relevantContext) {
@@ -220,13 +224,12 @@ export default function ChatApp() {
 
       {/* Sidebar */}
       <div
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
+        className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0 transform transition-transform duration-300 ease-in-out fixed lg:static top-0 left-0 h-full w-64 bg-white p-4 overflow-y-auto z-40 flex flex-col`}
       >
         <div className="flex-grow">
           <FileUpload
-            onChange={() => {}}
+            onChange={() => { }}
             sessionId={sessionId}
             setSessionId={setSessionId}
             setSelectedExample={setSelectedExample}
@@ -374,9 +377,8 @@ export default function ChatApp() {
                     className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
                   >
                     <div
-                      className={`inline-block p-2 rounded-full px-4 py-2 ${
-                        message.role === "user" ? "bg-gray-300" : ""
-                      } opacity-0 animate-fadeIn`}
+                      className={`inline-block p-2 rounded-full px-4 py-2 ${message.role === "user" ? "bg-gray-300" : ""
+                        } opacity-0 animate-fadeIn`}
                     >
                       <Markdown className="prose">{message.content}</Markdown>
                     </div>

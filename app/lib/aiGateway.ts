@@ -8,12 +8,14 @@ export async function streamLLMResponse({
   model,
   AI,
   provider,
+  isDemo
 }: {
   messages: RoleScopedChatInput[];
   accountId: string;
   AI?: Ai;
   model: string;
   provider: string;
+  isDemo: boolean;
   apiKeys: {
     openai?: string;
     anthropic?: string;
@@ -38,7 +40,7 @@ export async function streamLLMResponse({
   }
 
   const gatewayId = "cloudflare-rag";
-  const providers = [
+  let providers = [
     {
       provider: "groq",
       endpoint: "chat/completions",
@@ -122,6 +124,13 @@ export async function streamLLMResponse({
       },
     },
   ];
+
+  if (isDemo) {
+    // Demo account cannot use Claude 3.5 or GPT-4o
+    providers = providers.filter(
+      (p) => p.query.model !== "gpt-4o" && p.query.model !== "claude-3-5-sonnet-20240620"
+    );
+  }
 
   if (provider && model) {
     const selectedProvider = providers.find((p) => p.provider === provider);

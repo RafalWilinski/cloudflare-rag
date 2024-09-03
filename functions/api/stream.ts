@@ -199,6 +199,8 @@ async function streamResponse(
   env: Env,
   writable: WritableStream
 ) {
+  // Rafal's account id. If it is deployed on my account (aka this is demo), expensive models are prohibited.
+  const IS_DEPLOYED_AS_DEMO = env.CLOUDFLARE_ACCOUNT_ID === 'fa3e82d8258ac121c26085c2a5952780'
   const { messages, provider, model } = params;
   const apiKeys = {
     anthropic: env.ANTHROPIC_API_KEY,
@@ -213,6 +215,7 @@ async function streamResponse(
     model,
     provider,
     AI: env.AI,
+    isDemo: IS_DEPLOYED_AS_DEMO
   });
 
   (stream as Response).body
@@ -247,7 +250,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         await streamResponse(params, ctx.env, writable);
       } catch (error) {
         console.error(error);
-        await writer.write(new TextEncoder().encode(`data: ${JSON.stringify({ message: (error as Error).message })}\n\n`));
+        await writer.write(new TextEncoder().encode(`data: ${JSON.stringify({ error: (error as Error).message })}\n\n`));
         await writer.close();
       }
     })()
