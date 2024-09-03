@@ -6,6 +6,15 @@ https://github.com/user-attachments/assets/cbaa0380-7ad6-448d-ad44-e83772a9cf3f
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/RafalWilinski/cloudflare-rag)
 
+Features:
+
+- Every interaction is streamed to the UI using [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
+- Hybrid RAG using Full-Text Search on [D1](https://developers.cloudflare.com/d1/) and Vector Search on [Vectorize](https://developers.cloudflare.com/vectorize/) 
+- Switchable between various providers (OpenAI, Groq, Anthropic) using [AI Gateway](https://developers.cloudflare.com/ai-sdk/ai-gateway/) with fallbacks
+- Per-IP Rate limiting using Cloudflare's [KV](https://developers.cloudflare.com/kv/)
+- OCR is running inside Cloudflare Worker using [unpdf](https://github.com/unjs/unpdf)
+
+
 ## Development
 
 Install dependencies:
