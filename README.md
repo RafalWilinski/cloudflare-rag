@@ -18,6 +18,8 @@ Features:
 
 ## Development
 
+> Make sure you have Node, pnpm and wrangler CLI installed.
+
 Install dependencies:
 
 ```sh
