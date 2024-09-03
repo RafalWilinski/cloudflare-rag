@@ -4,6 +4,8 @@
 
 https://github.com/user-attachments/assets/cbaa0380-7ad6-448d-ad44-e83772a9cf3f
 
+![Demo](https://cloudflare-rag.pages.dev/)
+
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/RafalWilinski/cloudflare-rag)
 
 Features:
