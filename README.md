@@ -1,6 +1,6 @@
 # Fullstack Cloudflare RAG
 
-> This is a fullstack example of how to build a RAG (Retrieval Augmented Generation) app with Cloudflare. It uses Cloudflare Workers, Pages, D1, R2, and AI SDK.
+> This is a fullstack example of how to build a RAG (Retrieval Augmented Generation) app with Cloudflare. It uses Cloudflare Workers, Pages, D1, KV, R2, AI Gateway and Workers AI.
 
 https://github.com/user-attachments/assets/cbaa0380-7ad6-448d-ad44-e83772a9cf3f
 
@@ -13,6 +13,7 @@ Features:
 - Switchable between various providers (OpenAI, Groq, Anthropic) using [AI Gateway](https://developers.cloudflare.com/ai-sdk/ai-gateway/) with fallbacks
 - Per-IP Rate limiting using Cloudflare's [KV](https://developers.cloudflare.com/kv/)
 - OCR is running inside Cloudflare Worker using [unpdf](https://github.com/unjs/unpdf)
+- Smart Placement automatically places your workloads in an optimal location that minimizes latency and speeds up your applications
 
 
 ## Development
@@ -72,3 +73,18 @@ npm run deploy
 ![Hybrid Search RAG](./assets/hybrid-rag.png)
 
 This project uses a combination of classical Full Text Search (sparse) against Cloudflare D1 and Hybrid Search with embeddings against Vectorize (dense) to provide the best of both worlds providing the most applicable context to the LLM.
+
+The way it works is this:
+1. We take user input and we rewrite it to 5 different queries using an LLM
+2. We run each of these queries against our both datastores - D1 database using BM25 for full-text search and Vectorize for dense retrieval
+3. We take the results from both datastores and we merge them together using [Reciprocal Rank Fusion](https://www.elastic.co/guide/en/elasticsearch/reference/current/rrf.html) which provides us with a single list of results
+4. We then take the top 10 results from this list and we pass them to the LLM to generate a response
+
+
+## License
+
+This project is licensed under the terms of the MIT License.
+
+## Consulting
+
+I [(Rafal)](https://rwilinski.ai) offers consulting services in building AI applications. If you need help with your project, please reach out to me on [Twitter](https://twitter.com/rafalwilinski).
