@@ -93,7 +93,7 @@ async function insertVectors(
             id: chunkIds[index],
             values: embedding,
             namespace: "default",
-            metadata: { sessionId, documentId, chunkId: chunkIds[index], text: chunkBatch[index] },
+            metadata: { session_id: sessionId, documentId, chunkId: chunkIds[index], text: chunkBatch[index] },
           }))
         );
 
