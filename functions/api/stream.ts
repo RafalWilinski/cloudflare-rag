@@ -120,7 +120,7 @@ async function queryVectorIndex(queries: string[], env: Env, sessionId: string) 
         returnMetadata: "all",
         namespace: "default",
         filter: {
-          sessionId,
+          session_id: sessionId,
         },
       })
     )
